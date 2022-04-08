@@ -1,0 +1,10 @@
+[default]
+src = 'src'
+out = 'out'
+libs = ['lib', 'node_modules']
+gas_reports = ["*"]
+
+fuzz_runs = 1280
+
+
+# See more config options https://github.com/gakonst/foundry/tree/master/config
