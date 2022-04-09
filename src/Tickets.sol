@@ -1,44 +1,33 @@
-// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity >=0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
 
-error IncorrectOwner();
-error NonexistentToken();
-error QueryForZeroAddress();
+// import "./lib/ERC721.sol";
+import {Gachapon} from "./Gachapon.sol";
 
-error TokenIdUnstaked();
-error ExceedsStakingLimit();
-
-error MintToZeroAddress();
-error MintZeroQuantity();
-error MintMaxSupplyReached();
-error MintMaxWalletReached();
-
+error CallerNotOwner();
+error CallerNotApproved();
 error CallerNotOwnerNorApproved();
 
-error ApprovalToCaller();
-error ApproveToCurrentOwner();
+error IncorrectOwner();
+error MaxSupplyReached();
 
 error TransferFromIncorrectOwner();
 error TransferToNonERC721Receiver();
 error TransferToZeroAddress();
 
-abstract contract ERC721 {
+contract Tickets {
     event Transfer(address indexed from, address indexed to, uint256 indexed id);
     event Approval(address indexed owner, address indexed spender, uint256 indexed id);
     event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
-
-    string public name;
-    string public symbol;
-
-    function tokenURI(uint256 id) external view virtual returns (string memory);
 
     mapping(uint256 => address) public ownerOf;
     mapping(uint256 => address) public getApproved;
     mapping(address => mapping(address => bool)) public isApprovedForAll;
 
-    constructor(string memory _name, string memory _symbol) {
-        name = _name;
-        symbol = _symbol;
+    Gachapon immutable gachapon;
+
+    constructor(Gachapon gachapon_) {
+        gachapon = gachapon_;
     }
 
     /* ------------- Public ------------- */
@@ -103,25 +92,66 @@ abstract contract ERC721 {
             interfaceId == 0x5b5e139f; // ERC165 Interface ID for ERC721Metadata
     }
 
-    /* ------------- Internal ------------- */
+    /* ------------- Restricted ------------- */
 
-    function _mint(address to, uint256 id) internal virtual {
-        if (to == address(0)) revert MintToZeroAddress();
-
+    // @note assumes correct id minting is handled by master contract (saves gas)
+    function mint(address to, uint256 id) external onlyGachapon {
+        // if (ownerOf[id] != address(0)) revert IncorrectOwner();
+        // if (totalSupply == maxAdmission) revert MaxSupplyReached();
         ownerOf[id] = to;
-
         emit Transfer(address(0), to, id);
     }
 
-    function _burn(uint256 id) internal virtual {
-        address owner = ownerOf[id];
+    function burnFrom(address from, uint256 id) external onlyGachapon {
+        if (ownerOf[id] != from) revert CallerNotOwner();
 
-        require(owner != address(0), "NOT_MINTED");
+        emit Transfer(from, address(0), id);
 
         delete ownerOf[id];
         delete getApproved[id];
+    }
 
-        emit Transfer(owner, address(0), id);
+    modifier onlyGachapon() {
+        if (msg.sender != address(gachapon)) revert CallerNotApproved();
+        _;
+    }
+
+    function tokenURI(uint256 id) external view returns (string memory) {
+        return gachapon.ticketsTokenURI(id);
+    }
+
+    function name() external view returns (string memory) {
+        return gachapon.ticketsName();
+    }
+
+    function symbol() external view returns (string memory) {
+        return gachapon.ticketsSymbol();
+    }
+
+    /* ------------- O(N) Read Only ------------- */
+
+    function balanceOf(address user) external view returns (uint256) {
+        uint256 count;
+        uint256 supply = gachapon.ticketsSupply();
+        unchecked {
+            for (uint256 i; i < supply; ++i) if (ownerOf[i] == user) ++count;
+        }
+        return count;
+    }
+
+    function tokenIdsOf(address user) external view returns (uint256[] memory ids) {
+        uint256 balance = this.balanceOf(user);
+        uint256 supply = gachapon.ticketsSupply();
+        ids = new uint256[](balance);
+        uint256 count;
+        unchecked {
+            for (uint256 i; i < supply; ++i) {
+                if (ownerOf[i] == user) {
+                    ids[count++] = i;
+                    if (count == balance) break;
+                }
+            }
+        }
     }
 }
 
@@ -132,4 +162,24 @@ interface IERC721Receiver {
         uint256 id,
         bytes calldata data
     ) external returns (bytes4);
+}
+
+interface ITickets {
+    function totalSupply() external returns (uint256);
+
+    function mint(address to) external;
+
+    function burnFrom(address from, uint256 id) external;
+
+    // function tokenURI(uint256 id)
+    //     external
+    //     view
+    //     override
+    //     returns (string memory)
+    // {
+    //     return
+    //         gachapon.isGoldenTicket(raffleId, id)
+    //             ? "ipfs/QmcU3dhpgV9uWwgWQ7aPCsyZSYZDZMCKj1FrDJCEQAceoP/winning-ticket.json"
+    //             : "ipfs/QmcU3dhpgV9uWwgWQ7aPCsyZSYZDZMCKj1FrDJCEQAceoP/raffle-ticket.json";
+    // }
 }

@@ -6,8 +6,10 @@ library Choice {
         uint256 n,
         uint256 m,
         uint256 r
-    ) external pure returns (uint256[] memory) {
+    ) internal pure returns (uint256[] memory) {
         unchecked {
+            if (n > m) n = m;
+
             uint256[] memory choice = new uint256[](n);
 
             uint256 s;
@@ -39,8 +41,10 @@ library Choice {
         uint256 n,
         uint256 m,
         uint256 r
-    ) external pure returns (bool, uint256) {
+    ) internal pure returns (bool, uint256) {
         unchecked {
+            if (n > m) n = m;
+
             uint256[] memory choice = new uint256[](n);
 
             uint256 s;
