@@ -1,15 +1,8 @@
-# Basic Sample Hardhat Project
+# Gachapon (WIP)
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+On-chain automated raffling system.
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+- Owner is able to create a new raffle by inserting ERC721's into the Gachapon
+- Users are able to mint tickets as ERC721's by burning an underlying ERC20
+- Owner reveals raffle by requesting Chainlink VRF
+- Winning tickets are able to claim the prizes
