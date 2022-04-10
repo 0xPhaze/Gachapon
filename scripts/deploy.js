@@ -42,7 +42,40 @@ async function main() {
   await tx.wait();
 
   const now = Math.floor(new Date().getTime() / 1000);
-  await gachapon.feedToys(mocks, ids, now - 1000, now - 100, ethers.utils.parseEther("10"), 100);
+  await gachapon.feedToys(
+    mocks.slice(0, 3),
+    ids.slice(0, 3),
+    now - 1000,
+    now - 100,
+    ethers.utils.parseEther("10"),
+    100
+  );
+  await gachapon.feedToys(mocks.slice(3, 7), ids.slice(3, 7), now, now + 100000000, ethers.utils.parseEther("10"), 220);
+  await gachapon.feedToys(
+    mocks.slice(7, 10),
+    ids.slice(7, 10),
+    now + 1000,
+    now + 10000000,
+    ethers.utils.parseEther("20"),
+    200
+  );
+
+  await gachapon.feedToys(
+    mocks.slice(10, 12),
+    ids.slice(10, 12),
+    now + 10000000000,
+    now + 10000000000,
+    ethers.utils.parseEther("13"),
+    700
+  );
+  await gachapon.feedToys(
+    mocks.slice(12, 13),
+    ids.slice(12, 13),
+    now + 20000000000,
+    now + 30000000000,
+    ethers.utils.parseEther("8"),
+    300
+  );
 }
 
 main()
