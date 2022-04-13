@@ -61,7 +61,6 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     mapping(uint256 => string) raffleNames;
 
     uint256 raffleRefund = 80;
-    uint256 freebieBurnNum = 3;
 
     /* ------------- External ------------- */
 
@@ -121,23 +120,6 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         gouda.transferFrom(address(this), msg.sender, refund);
     }
 
-    function burnTickets(uint256 raffleId, uint256 ticketId) external {
-        Raffle storage raffle = raffles[raffleId];
-
-        // if (raffle.cancelled) revert RaffleNotActive();
-        if (block.timestamp <= raffle.end) revert RaffleNotActive();
-
-        Tickets tickets = Tickets(raffle.tickets);
-        tickets.burnFrom(msg.sender, ticketId);
-
-        uint256 refund;
-        unchecked {
-            refund = (raffle.price * raffleRefund) / 100;
-        }
-
-        gouda.transferFrom(address(this), msg.sender, refund);
-    }
-
     /* ------------- View ------------- */
 
     function isWinningTicket(uint256 raffleId, uint256 ticketId) public view returns (bool) {
@@ -155,7 +137,6 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
     function getWinningTickets(uint256 raffleId) public view returns (uint256[] memory ids) {
         Raffle storage raffle = raffles[raffleId];
-        Tickets tickets = Tickets(raffle.tickets);
 
         uint256 randomSeed = raffle.randomSeed;
 
@@ -179,20 +160,17 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             uint256[] memory start,
             uint256[] memory end,
             uint256[] memory price,
-            // bool[] memory active,
-            uint256[] memory requirements,
+            uint256[] memory requirement,
             uint256[] memory ticketSupply,
             uint256[] memory maxSupply,
             address[][] memory toys,
             uint256[][] memory ids
         )
-    // address[][] memory winners
     {
         tickets = new address[](to - from);
         start = new uint256[](to - from);
         end = new uint256[](to - from);
         price = new uint256[](to - from);
-        // active = new bool[](to - from);
 
         toys = new address[][](to - from);
         ids = new uint256[][](to - from);
@@ -200,23 +178,19 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         ticketSupply = new uint256[](to - from);
         maxSupply = new uint256[](to - from);
 
-        requirements = new uint256[](to - from);
-
-        // winners = new address[][](to - from);
+        requirement = new uint256[](to - from);
 
         for (uint256 i; i < to - from; ++i) {
             tickets[i] = raffles[from + i].tickets;
             start[i] = raffles[from + i].start;
             end[i] = raffles[from + i].end;
             price[i] = raffles[from + i].price;
-            // active[i] = raffles[from + i].active;
+            requirement[i] = raffles[from + i].requirement;
             toys[i] = raffles[from + i].toys;
             ids[i] = raffles[from + i].ids;
 
             ticketSupply[i] = raffles[i].ticketSupply;
             maxSupply[i] = raffles[i].maxSupply;
-
-            // winners[i] = getRaffleWinners(i);
         }
     }
 
@@ -282,21 +256,8 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         emit Kachingg();
     }
 
-    function rescueToys(uint256 raffleId) external onlyOwner {
-        Raffle storage raffle = raffles[raffleId];
-
-        uint256 numToys = raffle.toys.length;
-
-        // @note check cancelled
-        // raffle.cancelled = true;
-
-        for (uint256 i; i < numToys; ++i) {
-            IERC721(raffle.toys[i]).transferFrom(address(this), msg.sender, raffles[raffleId].ids[i]);
-            // delete raffle.toys;
-            // delete raffle.ids;
-        }
-
-        raffle.cancelled = true;
+    function rescueToys(address[] calldata toys, uint256[] calldata ids) external onlyOwner {
+        for (uint256 i; i < toys.length; ++i) IERC721(toys[i]).transferFrom(address(this), msg.sender, ids[i]);
     }
 
     function cancelRaffle(uint256 raffleId) external onlyOwner {
@@ -364,9 +325,10 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         if (raffle.randomSeed != 0) revert MachineBeDoinWork();
 
         emit BZZzzt();
-        // @note check if this has to be -1
+        // on-chain requires block.number - 1, forge block number starts at 0...
         // raffle.randomSeed = uint256(blockhash(block.number - 1));
-        raffle.randomSeed = uint256(blockhash(block.number));
+        // @note FIX
+        raffle.randomSeed = uint256(keccak256(abi.encode(raffleId)));
     }
 
     /* ------------- Internal ------------- */
