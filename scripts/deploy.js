@@ -17,6 +17,8 @@ async function main() {
 
   console.log("Gachapon deployed to:", gachapon.address);
   console.log("Gouda deployed to:", gouda.address);
+  // ? "ipfs://QmcU3dhpgV9uWwgWQ7aPCsyZSYZDZMCKj1FrDJCEQAceoP/winning-ticket.json"
+  // : "ipfs://QmcU3dhpgV9uWwgWQ7aPCsyZSYZDZMCKj1FrDJCEQAceoP/raffle-ticket.json";
 
   const MockERC721 = await ethers.getContractFactory("MockERC721");
 

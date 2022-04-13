@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {DSTest} from "../../lib/ds-test/src/test.sol";
+import {DSTestPlus} from "../../lib/solmate/src/test/utils/DSTestPlus.sol";
 import {Vm} from "../../lib/forge-std/src/Vm.sol";
 import {stdCheats} from "../../lib/forge-std/src/stdlib.sol";
 import {console} from "../../lib/forge-std/src/console.sol";
 
-import {MockERC721} from "@rari-capital/solmate/src/test/utils/mocks/MockERC721.sol";
-import {MockERC20} from "@rari-capital/solmate/src/test/utils/mocks/MockERC20.sol";
+import {MockERC721} from "../../lib/solmate/src/test/utils/mocks/MockERC721.sol";
+import {MockERC20} from "../../lib/solmate/src/test/utils/mocks/MockERC20.sol";
 
 import "../WhitelistMarket.sol";
 
 import "../lib/Ownable.sol";
 import "../lib/Gouda.sol";
 
-contract TestWhitelistMarket is DSTest, stdCheats {
+contract TestWhitelistMarket is DSTestPlus, stdCheats {
     Vm vm = Vm(HEVM_ADDRESS);
 
     WhitelistMarket market;
