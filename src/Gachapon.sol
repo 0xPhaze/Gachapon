@@ -95,7 +95,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         uint256 numPrizes = raffle.ids.length;
         uint256 numEntrants = raffle.ticketSupply;
 
-        (bool win, uint256 prizeId) = Choice.indexOfSelectNOfM(ticketId, numPrizes, numEntrants, randomSeed);
+        (bool win, uint256 prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
 
         if (!win) revert BetterLuckNextTime();
 
@@ -136,7 +136,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         uint256 numPrizes = raffle.ids.length;
         uint256 numEntrants = raffle.ticketSupply;
 
-        (bool win, ) = Choice.indexOfSelectNOfM(ticketId, numPrizes, numEntrants, randomSeed);
+        (bool win, ) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
         return win;
     }
 
@@ -150,7 +150,22 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         uint256 numPrizes = raffle.ids.length;
         uint256 numEntrants = raffle.ticketSupply;
 
-        return Choice.selectNOfM(numPrizes, numEntrants, randomSeed);
+        return Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
+    }
+
+    function getWinners(uint256 raffleId) public view returns (address[] memory winners) {
+        Raffle storage raffle = raffles[raffleId];
+
+        uint256 randomSeed = raffle.randomSeed;
+
+        if (raffle.cancelled || randomSeed == 0) return winners;
+
+        uint256 numPrizes = raffle.ids.length;
+        uint256 numEntrants = raffle.ticketSupply;
+        Tickets tickets = Tickets(raffle.tickets);
+
+        uint256[] memory ids = Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
+        for (uint256 i; i < numEntrants; ++i) winners[i] = tickets.ownerOf(ids[i]);
     }
 
     function getRaffleTickets(uint256 raffleId) external view returns (address) {
