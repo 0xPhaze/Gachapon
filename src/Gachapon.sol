@@ -243,7 +243,8 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         Raffle storage raffle = raffles[raffleId];
 
         if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
-        if (end < start || start < block.timestamp) revert InvalidTimestamps();
+        if (end < start) revert InvalidTimestamps();
+        // if (end < start || start < block.timestamp) revert InvalidTimestamps();
 
         address tickets = createClone(ticketsImplementation);
         ticketsToRaffleId[tickets] = raffleId;

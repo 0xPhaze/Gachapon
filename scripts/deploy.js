@@ -7,7 +7,7 @@ async function main() {
   const gachapon = await Gachapon.deploy();
 
   const MockERC20 = await ethers.getContractFactory("MockERC20");
-  const gouda = await MockERC20.deploy("", "", 18);
+  const gouda = await MockERC20.deploy();
 
   const Tickets = await ethers.getContractFactory("Tickets");
   const tickets = await Tickets.deploy(gachapon.address);
@@ -49,15 +49,27 @@ async function main() {
     ids.slice(0, 3),
     now - 1000,
     now - 100,
+    1,
     ethers.utils.parseEther("10"),
     100
   );
-  await gachapon.feedToys(mocks.slice(3, 7), ids.slice(3, 7), now, now + 100000000, ethers.utils.parseEther("10"), 220);
+  await gachapon.feedToys(mocks.slice(3, 7), ids.slice(3, 7), now, now + 36000, 1, ethers.utils.parseEther("10"), 220);
+
+  await gachapon.feedToys(
+    mocks.slice(12, 13),
+    ids.slice(12, 13),
+    now,
+    now + 142000,
+    1,
+    ethers.utils.parseEther("8"),
+    300
+  );
   await gachapon.feedToys(
     mocks.slice(7, 10),
     ids.slice(7, 10),
-    now + 1000,
-    now + 10000000,
+    now + 10000,
+    now + 40000,
+    1,
     ethers.utils.parseEther("20"),
     200
   );
@@ -65,18 +77,11 @@ async function main() {
   await gachapon.feedToys(
     mocks.slice(10, 12),
     ids.slice(10, 12),
-    now + 10000000000,
-    now + 10000000000,
+    now + 360000,
+    now + 400000,
+    1,
     ethers.utils.parseEther("13"),
     700
-  );
-  await gachapon.feedToys(
-    mocks.slice(12, 13),
-    ids.slice(12, 13),
-    now + 20000000000,
-    now + 30000000000,
-    ethers.utils.parseEther("8"),
-    300
   );
 }
 
