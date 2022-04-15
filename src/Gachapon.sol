@@ -13,18 +13,20 @@ import {Choice} from "./lib/Choice.sol";
 
 import {Tickets} from "./Tickets.sol";
 
+import {console} from "../lib/forge-std/src/console.sol";
+
 error RaffleNotActive();
 error RaffleOngoing();
 error RaffleRandomSeedSet();
 error TicketsMaxSupplyReached();
 
-error CallerNotOwner();
 error RaffleUnrevealed();
 
 error BetterLuckNextTime();
 error MachineBeDoinWork();
 error NeedsMoarTickets();
 error TicketsImplementationUnset();
+error InvalidTimestamps();
 
 contract Gachapon is Ownable, VRFSubscriptionManager {
     using Strings for uint256;
@@ -67,6 +69,9 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     function buyTicket(uint256 raffleId) external {
         Raffle storage raffle = raffles[raffleId];
         uint256 ticketSupply = raffle.ticketSupply;
+
+        // console.log("ticketsupply", ticketSupply);
+        // console.log("maxsupply", raffle.maxSupply);
 
         if (raffle.cancelled || raffle.end < block.timestamp || block.timestamp < raffle.start)
             revert RaffleNotActive();
@@ -189,8 +194,8 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             toys[i] = raffles[from + i].toys;
             ids[i] = raffles[from + i].ids;
 
-            ticketSupply[i] = raffles[i].ticketSupply;
-            maxSupply[i] = raffles[i].maxSupply;
+            ticketSupply[i] = raffles[from + i].ticketSupply;
+            maxSupply[i] = raffles[from + i].maxSupply;
         }
     }
 
@@ -238,8 +243,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         Raffle storage raffle = raffles[raffleId];
 
         if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
-
-        // @note add timestamp start < end check
+        if (end < start || start < block.timestamp) revert InvalidTimestamps();
 
         address tickets = createClone(ticketsImplementation);
         ticketsToRaffleId[tickets] = raffleId;
@@ -268,9 +272,8 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         // @note check cancelled
         // raffle.cancelled = true;
 
-        for (uint256 i; i < numToys; ++i) {
+        for (uint256 i; i < numToys; ++i)
             IERC721(raffle.toys[i]).transferFrom(address(this), msg.sender, raffles[raffleId].ids[i]);
-        }
 
         raffle.cancelled = true;
     }

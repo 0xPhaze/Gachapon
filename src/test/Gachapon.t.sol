@@ -12,7 +12,7 @@ import {MockERC20} from "../../lib/solmate/src/test/utils/mocks/MockERC20.sol";
 import {IGouda} from "../lib/interfaces.sol";
 import "../Gachapon.sol";
 
-import {Tickets, CallerNotApproved} from "../Tickets.sol";
+import "../Tickets.sol";
 
 contract TestGachapon is DSTestPlus, stdCheats {
     Vm vm = Vm(HEVM_ADDRESS);
@@ -76,8 +76,9 @@ contract TestGachapon is DSTestPlus, stdCheats {
         uint256 end = block.timestamp + 8888;
         uint256 price = 6666;
         uint256 maxSupply = 100;
+        uint256 requirements = 4;
 
-        gachapon.feedToys(toys, ids, start, end, 0, price, maxSupply);
+        gachapon.feedToys(toys, ids, start, end, requirements, price, maxSupply);
 
         for (uint256 i; i < ids.length; i++) assertEq(IERC721(toys[i]).ownerOf(ids[i]), address(gachapon));
 
@@ -104,6 +105,10 @@ contract TestGachapon is DSTestPlus, stdCheats {
             assertEq(allStart[0], start);
             assertEq(allEnd[0], end);
             assertEq(allPrice[0], price);
+            assertEq(allRequirements[0], requirements);
+            assertEq(allTotalSupply[0], 0);
+            assertEq(allMaxSupply[0], maxSupply);
+            // console.log(allMaxSupply[0]);
 
             // @note check requirements
         }
@@ -133,20 +138,20 @@ contract TestGachapon is DSTestPlus, stdCheats {
         assertEq(tickets.ownerOf(1), tester);
     }
 
-    function test_buyTickets() public {
-        initializeMockRaffle();
-        initializeMockRaffle();
-        skip(200);
+    // function test_buyTickets() public {
+    //     initializeMockRaffle();
+    //     initializeMockRaffle();
+    //     skip(200);
 
-        gouda.mint(tester, 100000000);
-        gouda.approve(address(gachapon), type(uint256).max);
+    //     gouda.mint(tester, 100000000);
+    //     gouda.approve(address(gachapon), type(uint256).max);
 
-        for (uint256 i; i < 30; i++) gachapon.buyTicket(2);
+    //     for (uint256 i; i < 30; i++) gachapon.buyTicket(2);
 
-        Tickets tickets = Tickets(gachapon.getRaffleTickets(2));
+    //     Tickets tickets = Tickets(gachapon.getRaffleTickets(2));
 
-        for (uint256 i; i < 30; i++) assertEq(tickets.ownerOf(i + 1), tester);
-    }
+    //     for (uint256 i; i < 30; i++) assertEq(tickets.ownerOf(i + 1), tester);
+    // }
 
     function test_buyTicket_fail_RaffleNotActive() public {
         initializeMockRaffle();
@@ -161,16 +166,16 @@ contract TestGachapon is DSTestPlus, stdCheats {
         gachapon.buyTicket(1);
     }
 
-    function test_buyTicket_fail_TicketsMaxSupplyReached() public {
+    function test_buyTicket_fail_MintExceedsLimit() public {
         initializeMockRaffle();
         skip(200);
 
         gouda.mint(tester, 100000000);
         gouda.approve(address(gachapon), type(uint256).max);
 
-        for (uint256 i; i < 30; i++) gachapon.buyTicket(1);
+        gachapon.buyTicket(1);
 
-        vm.expectRevert(TicketsMaxSupplyReached.selector);
+        vm.expectRevert(MintExceedsLimit.selector);
         gachapon.buyTicket(1);
     }
 
@@ -209,20 +214,18 @@ contract TestGachapon is DSTestPlus, stdCheats {
         vm.prank(chris);
         gouda.approve(address(gachapon), type(uint256).max);
 
-        for (uint256 i; i < 5; i++) {
-            vm.prank(alice);
-            gachapon.buyTicket(1);
-            vm.prank(bob);
-            gachapon.buyTicket(1);
-            vm.prank(chris);
-            gachapon.buyTicket(1);
-        }
+        vm.prank(alice);
+        gachapon.buyTicket(1);
+        vm.prank(bob);
+        gachapon.buyTicket(1);
+        vm.prank(chris);
+        gachapon.buyTicket(1);
 
         skip(300);
 
         gachapon.kickStuckMachine(1);
 
-        (, , , , , , , , uint256[][] memory ids) = gachapon.queryRaffles(1, 2);
+        // (, , , , , , , , uint256[][] memory ids) = gachapon.queryRaffles(1, 2);
         // @note
         // uint256 numWinners = winners[0].length;
         // uint256 numToys = ids[0].length;
