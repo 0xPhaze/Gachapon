@@ -100,7 +100,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         if (!win) revert BetterLuckNextTime();
 
         tickets.burnFrom(msg.sender, ticketId);
-        IERC721(raffle.toys[prizeId]).transferFrom(address(this), msg.sender, prizeId);
+        IERC721(raffle.toys[prizeId]).transferFrom(address(this), msg.sender, raffle.ids[prizeId]);
     }
 
     function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external {

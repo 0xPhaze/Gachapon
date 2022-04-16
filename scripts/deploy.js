@@ -56,7 +56,7 @@ async function main() {
     ethers.utils.parseEther("10"),
     100
   );
-  await gachapon.feedToys(mocks.slice(3, 7), ids.slice(3, 7), now, now + 3600, 1, ethers.utils.parseEther("10"), 220);
+  await gachapon.feedToys(mocks.slice(3, 7), ids.slice(3, 7), now, now + 600, 1, ethers.utils.parseEther("10"), 220);
 
   await gachapon.feedToys(
     mocks.slice(12, 13),
