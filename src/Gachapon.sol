@@ -165,7 +165,10 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         Tickets tickets = Tickets(raffle.tickets);
 
         uint256[] memory ids = Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
-        for (uint256 i; i < numEntrants; ++i) winners[i] = tickets.ownerOf(ids[i]);
+        uint256 numIds = ids.length;
+
+        winners = new address[](numIds);
+        for (uint256 i; i < numIds; ++i) winners[i] = tickets.ownerOf(ids[i]);
     }
 
     function getRaffleTickets(uint256 raffleId) external view returns (address) {
@@ -183,6 +186,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             uint256[] memory requirement,
             uint256[] memory ticketSupply,
             uint256[] memory maxSupply,
+            // uint256[] memory ticketBalance,
             address[][] memory toys,
             uint256[][] memory ids
         )
@@ -197,6 +201,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
         ticketSupply = new uint256[](to - from);
         maxSupply = new uint256[](to - from);
+        // ticketBalance = new uint256[](to - from);
 
         requirement = new uint256[](to - from);
 
@@ -209,6 +214,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             toys[i] = raffles[from + i].toys;
             ids[i] = raffles[from + i].ids;
 
+            // ticketBalance[i] = Tickets(raffles[from + i].tickets).balanceOf(msg.sender);
             ticketSupply[i] = raffles[from + i].ticketSupply;
             maxSupply[i] = raffles[from + i].maxSupply;
         }
