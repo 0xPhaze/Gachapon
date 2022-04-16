@@ -122,7 +122,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             }
         }
 
-        gouda.transferFrom(address(this), msg.sender, refund);
+        gouda.transfer(msg.sender, refund);
     }
 
     /* ------------- View ------------- */
@@ -230,7 +230,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     function ticketsName() external view returns (string memory) {
         uint256 raffleId = ticketsToRaffleId[msg.sender];
         string memory name = raffleNames[raffleId];
-        if (bytes(name).length == 0) return string.concat("Gouda Raffle #", raffleId.toString());
+        if (bytes(name).length == 0) return string.concat("Raffle Tickets #", raffleId.toString());
         return name;
     }
 

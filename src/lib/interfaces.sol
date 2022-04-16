@@ -8,6 +8,8 @@ interface IGouda {
         uint256 amount
     ) external;
 
+    function transfer(address to, uint256 amount) external;
+
     function balanceOf(address account) external view returns (uint256);
 
     function burnFrom(address account, uint256 amount) external;

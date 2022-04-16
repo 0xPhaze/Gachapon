@@ -1,104 +1,112 @@
-// // SPDX-License-Identifier: MIT
-// pragma solidity ^0.8.12;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.12;
 
-// import {console} from "../lib/forge-std/src/console.sol";
+import {console} from "../lib/forge-std/src/console.sol";
 
-// import {Ownable} from "./lib/Ownable.sol";
-// import {Gouda} from "./lib/Gouda.sol";
+import {Ownable} from "./lib/Ownable.sol";
+import {Gouda} from "./lib/Gouda.sol";
 
-// import {IERC721} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
-// import {IERC20} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
+import {IERC721} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
+import {IERC20} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 
-// error AuctionOngoing();
-// error AuctionInactive();
+error AuctionOngoing();
+error AuctionInactive();
 
-// error InvalidTimestamp();
-// error BidTooLow();
+error InvalidTimestamp();
+error BidTooLow();
+error CannotWithdrawWinningBid();
+error IncorrectWinner();
 
-// contract AuctionHouse is Ownable {
-//     event BurnForWhitelist(uint256 indexed id);
+contract AuctionHouse is Ownable {
+    event BurnForWhitelist(uint256 indexed id);
 
-//     struct Auction {
-//         uint40 start;
-//         uint40 end;
-//         uint160 currentBid; // way more than should be ever minted
-//         bool cancelled;
-//     }
+    struct Auction {
+        uint40 start;
+        uint40 end;
+        uint160 currentBid; // way more than should be ever minted
+        bool cancelled;
+    }
 
-//     // struct Prize {
-//     //     address
-//     // }
+    struct Prize {
+        address nft;
+        uint256 id;
+    }
 
-//     uint256 public numAuctions;
-//     mapping(uint256 => Auction) public auctions;
-//     mapping(uint256 => Auction) public auctions;
-//     mapping(uint256 => mapping(address => uint256)) public bids;
+    uint256 public numAuctions;
+    mapping(uint256 => Auction) public auctions;
+    mapping(uint256 => Prize) public prizes;
 
-//     // Gouda constant gouda = Gouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
-//     Gouda immutable gouda;
+    mapping(uint256 => mapping(address => uint256)) public bids;
 
-//     constructor(Gouda gouda_) {
-//         gouda = gouda_;
-//     }
+    // Gouda constant gouda = Gouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
+    Gouda immutable gouda;
 
-//     /* ------------- External ------------- */
+    constructor(Gouda gouda_) {
+        gouda = gouda_;
+    }
 
-//     function placeBid(uint256 auctionId, uint160 bid) external {
-//         Auction storage auction = auctions[auctionId];
+    /* ------------- External ------------- */
 
-//         if (block.timestamp < auction.start || auction.end < block.timestamp) revert AuctionInactive();
-//         if (bid <= auction.currentBid) revert BidTooLow();
+    function placeBid(uint256 auctionId, uint160 bid) external {
+        Auction storage auction = auctions[auctionId];
 
-//         uint256 callerBid = bids[auctionId][msg.sender];
-//         unchecked {
-//             // callerBid <= auction.currentBid < bid
-//             gouda.transferFrom(msg.sender, address(this), bid - callerBid);
-//         }
+        if (block.timestamp < auction.start || auction.end < block.timestamp) revert AuctionInactive();
+        if (bid <= auction.currentBid) revert BidTooLow();
 
-//         bids[auctionId][msg.sender] = bid;
-//         auction.currentBid = bid;
-//     }
+        uint256 callerBid = bids[auctionId][msg.sender];
+        unchecked {
+            // callerBid <= auction.currentBid < bid
+            gouda.transferFrom(msg.sender, address(this), bid - callerBid);
+        }
 
-//     function withdrawBid(uint256 auctionId) external {
-//         Auction storage auction = auctions[auctionId];
+        bids[auctionId][msg.sender] = bid;
+        auction.currentBid = bid;
+    }
 
-//         if (block.timestamp <= auction.end) revert AuctionOngoing();
+    function resolveBid(uint256 auctionId) external {
+        Auction storage auction = auctions[auctionId];
 
-//         uint256 callerBid = bids[auctionId][msg.sender];
-//         delete bids[auctionId][msg.sender];
+        if (block.timestamp <= auction.end) revert AuctionOngoing();
 
-//         gouda.transferFrom(address(this), msg.sender, callerBid);
-//     }
+        uint256 callerBid = bids[auctionId][msg.sender];
+        delete bids[auctionId][msg.sender];
 
-//     /* ------------- Owner ------------- */
+        if (auction.currentBid == callerBid) {
+            Prize storage prize = prizes[auctionId];
+            IERC721(prize.nft).transferFrom(address(this), msg.sender, prize.id);
+        } else {
+            gouda.transferFrom(address(this), msg.sender, callerBid);
+        }
+    }
 
-//     function createAuction(
-//         address toy,
-//         uint256 id,
-//         uint40 start,
-//         uint40 end
-//     ) external onlyOwner {
-//         uint256 auctionId;
-//         unchecked {
-//             auctionId = ++numAuctions;
-//         }
-//         Auction storage auction = auctions[auctionId];
+    /* ------------- Owner ------------- */
 
-//         if (start > end) revert InvalidTimestamp();
+    function createAuction(
+        address toy,
+        uint256 id,
+        uint40 start,
+        uint40 end
+    ) external onlyOwner {
+        uint256 auctionId;
+        unchecked {
+            auctionId = ++numAuctions;
+        }
+        Auction storage auction = auctions[auctionId];
 
-//         IERC721(toy).transferFrom(msg.sender, address(this), id);
+        if (start > end) revert InvalidTimestamp();
 
-//         auction.start = start;
-//         auction.end = end;
-//     }
+        IERC721(toy).transferFrom(msg.sender, address(this), id);
 
-//     function cancelAuction(uint256 auctionId) external onlyOwner {
-//         Auction storage auction = auctions[auctionId];
+        auction.start = start;
+        auction.end = end;
+    }
 
-//         IERC721(toy).transferFrom(msg.sender, address(this), id);
+    function cancelAuction(uint256 auctionId) external onlyOwner {
+        Auction storage auction = auctions[auctionId];
+        auction.cancelled = true;
 
-//         auction.start = start;
-//         auction.end = end;
-//     }
-// }
+        Prize storage prize = prizes[auctionId];
 
+        IERC721(prize.nft).transferFrom(address(this), msg.sender, prize.id);
+    }
+}
