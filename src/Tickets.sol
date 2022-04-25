@@ -24,8 +24,8 @@ contract Tickets {
 
     mapping(uint256 => address) public ownerOf;
     mapping(address => uint256) public balanceOf;
-    // mapping(uint256 => address) public getApproved;
-    // mapping(address => mapping(address => bool)) public isApprovedForAll;
+    mapping(uint256 => address) public getApproved;
+    mapping(address => mapping(address => bool)) public isApprovedForAll;
 
     Gachapon immutable gachapon;
 

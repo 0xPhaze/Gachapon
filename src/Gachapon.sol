@@ -7,9 +7,10 @@ import {IERC721} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC72
 // import {VRFSubscriptionManagerMainnet as VRFSubscriptionManager} from "./lib/VRFSubscriptionManager.sol";
 import {VRFSubscriptionManagerMock as VRFSubscriptionManager} from "./lib/VRFSubscriptionManager.sol";
 
-import {IGouda} from "./lib/interfaces.sol";
+import {IGouda, IMadMouse} from "./lib/interfaces.sol";
 import {Ownable} from "./lib/Ownable.sol";
 import {Choice} from "./lib/Choice.sol";
+import {Gouda} from "./lib/Gouda.sol";
 
 import {Tickets} from "./Tickets.sol";
 
@@ -18,15 +19,19 @@ import {console} from "../lib/forge-std/src/console.sol";
 error RaffleNotActive();
 error RaffleOngoing();
 error RaffleRandomSeedSet();
+error RaffleAlreadyCancelled();
 error TicketsMaxSupplyReached();
 
 error RaffleUnrevealed();
+error PrizeAlreadyClaimed();
 
 error BetterLuckNextTime();
 error MachineBeDoinWork();
 error NeedsMoarTickets();
 error TicketsImplementationUnset();
 error InvalidTimestamps();
+error InvalidTicketPrice();
+error RequirementNotFulfilled();
 
 contract Gachapon is Ownable, VRFSubscriptionManager {
     using Strings for uint256;
@@ -36,50 +41,75 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     event BZZzzt();
 
     struct Raffle {
-        uint256 start;
-        uint256 end;
-        uint256 price;
-        address tickets;
-        uint256 ticketSupply;
-        uint256 maxSupply;
-        uint256 requirement;
-        address[] toys;
-        uint256[] ids;
-        uint256 randomSeed;
+        uint40 start;
+        uint40 end;
+        uint40 ticketSupply;
+        uint40 maxTicketSupply;
+        uint40 ticketPrice; // in multiples of 1e18
+        uint8 requirement;
+        uint16 refundRate;
         bool cancelled;
+        address tickets;
+        uint40 randomSeed;
+        address prizeNFT;
+        uint256[] prizeTokenIds;
+        // can split off numPrizes
     }
 
-    string ticketURI;
-    string losingTicketURI;
-    string winningTicketURI;
+    string ticketURI = "ipfs://QmSwrzsySKnkQmRQoZYmZ2XuJx3NMn2awdHwf1fezAJbq3/silver-ticket.json";
+    string losingTicketURI = "ipfs://QmSwrzsySKnkQmRQoZYmZ2XuJx3NMn2awdHwf1fezAJbq3/red-ticket.json";
+    string winningTicketURI = "ipfs://QmSwrzsySKnkQmRQoZYmZ2XuJx3NMn2awdHwf1fezAJbq3/gold-ticket.json";
 
-    IGouda public gouda;
     address ticketsImplementation;
 
     uint256 public numRaffles;
-    mapping(uint256 => Raffle) raffles;
-    mapping(address => uint256) ticketsToRaffleId;
+    mapping(uint256 => Raffle) private raffles;
+    mapping(address => uint256) public ticketsToRaffleId;
     mapping(uint256 => uint256) requestIdToLot;
-    mapping(uint256 => string) raffleNames;
 
-    uint256 raffleRefund = 80;
+    mapping(uint256 => mapping(uint256 => bool)) public claimedPrize;
+
+    uint256 constant ONE_MONTH = 3600 * 24 * 28;
+
+    // Gouda constant gouda = Gouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
+    // address constant genesis = Gouda(0x3ad30c5e2985e960e89f4a28efc91ba73e104b77);
+    // address constant troupe = Gouda(0x74d9d90a7fc261fbe92ed47b606b6e0e00d75e70);
+
+    Gouda immutable gouda;
+    IMadMouse immutable genesis;
+    IMadMouse immutable troupe;
+
+    constructor(
+        Gouda gouda_,
+        IMadMouse genesis_,
+        IMadMouse troupe_
+    ) {
+        gouda = gouda_;
+        genesis = genesis_;
+        troupe = troupe_;
+    }
 
     /* ------------- External ------------- */
 
-    function buyTicket(uint256 raffleId) external {
+    function buyTicket(uint256 raffleId, uint256 requirementData) external {
         Raffle storage raffle = raffles[raffleId];
         uint256 ticketSupply = raffle.ticketSupply;
 
-        // console.log("ticketsupply", ticketSupply);
-        // console.log("maxsupply", raffle.maxSupply);
-
         if (raffle.cancelled || raffle.end < block.timestamp || block.timestamp < raffle.start)
             revert RaffleNotActive();
-        if (ticketSupply == raffle.maxSupply) revert TicketsMaxSupplyReached();
+        if (ticketSupply == raffle.maxTicketSupply) revert TicketsMaxSupplyReached();
 
-        gouda.transferFrom(msg.sender, address(this), raffle.price);
+        uint256 requirement = raffle.requirement;
+        if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
+            revert RequirementNotFulfilled();
 
-        uint256 ticketId = ++raffle.ticketSupply;
+        unchecked {
+            gouda.transferFrom(msg.sender, address(this), raffle.ticketPrice * 1e18);
+        }
+
+        uint256 ticketId = ++ticketSupply;
+        raffle.ticketSupply = uint40(ticketSupply);
+
         Tickets(raffle.tickets).mint(msg.sender, ticketId);
     }
 
@@ -92,22 +122,26 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         if (raffle.cancelled) revert RaffleNotActive();
         if (randomSeed == 0) revert RaffleUnrevealed();
 
-        uint256 numPrizes = raffle.ids.length;
+        uint256 numPrizes = raffle.prizeTokenIds.length;
         uint256 numEntrants = raffle.ticketSupply;
 
         (bool win, uint256 prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
 
-        if (!win) revert BetterLuckNextTime();
+        // don't burn, keep as a souvenir
+        // tickets.burnFrom(msg.sender, ticketId);
+        if (tickets.ownerOf(ticketId) != msg.sender || !win) revert BetterLuckNextTime();
+        if (claimedPrize[raffleId][ticketId]) revert PrizeAlreadyClaimed();
 
-        tickets.burnFrom(msg.sender, ticketId);
-        IERC721(raffle.toys[prizeId]).transferFrom(address(this), msg.sender, raffle.ids[prizeId]);
+        claimedPrize[raffleId][ticketId] = true;
+
+        IERC721 prizeNFT = IERC721(raffle.prizeNFT);
+        prizeNFT.transferFrom(address(this), msg.sender, raffle.prizeTokenIds[prizeId]);
     }
 
     function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external {
         Raffle storage raffle;
 
         uint256 refund;
-        uint256 raffleRefundRate = raffleRefund;
 
         uint256 numBurnTickets = burnTicketIds.length;
         if (numBurnTickets == 0) revert NeedsMoarTickets();
@@ -118,7 +152,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
                 Tickets tickets = Tickets(raffle.tickets);
 
                 tickets.burnFrom(msg.sender, burnTicketIds[i]);
-                refund += (raffle.price * raffleRefundRate) / 100;
+                refund += (raffle.ticketPrice * 1e18 * raffle.refundRate) >> 16;
             }
         }
 
@@ -133,21 +167,21 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
         if (raffle.cancelled || randomSeed == 0) return false;
 
-        uint256 numPrizes = raffle.ids.length;
+        uint256 numPrizes = raffle.prizeTokenIds.length;
         uint256 numEntrants = raffle.ticketSupply;
 
         (bool win, ) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
         return win;
     }
 
-    function getWinningTickets(uint256 raffleId) public view returns (uint256[] memory ids) {
+    function getWinningTickets(uint256 raffleId) public view returns (uint256[] memory ticketIds) {
         Raffle storage raffle = raffles[raffleId];
 
         uint256 randomSeed = raffle.randomSeed;
 
-        if (raffle.cancelled || randomSeed == 0) return ids;
+        if (raffle.cancelled || randomSeed == 0) return ticketIds;
 
-        uint256 numPrizes = raffle.ids.length;
+        uint256 numPrizes = raffle.prizeTokenIds.length;
         uint256 numEntrants = raffle.ticketSupply;
 
         return Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
@@ -160,63 +194,52 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
         if (raffle.cancelled || randomSeed == 0) return winners;
 
-        uint256 numPrizes = raffle.ids.length;
+        uint256 numPrizes = raffle.prizeTokenIds.length;
         uint256 numEntrants = raffle.ticketSupply;
         Tickets tickets = Tickets(raffle.tickets);
 
-        uint256[] memory ids = Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
-        uint256 numIds = ids.length;
+        uint256[] memory prizeTokenIds = Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
+        uint256 numIds = prizeTokenIds.length;
 
         winners = new address[](numIds);
-        for (uint256 i; i < numIds; ++i) winners[i] = tickets.ownerOf(ids[i]);
+        for (uint256 i; i < numIds; ++i) winners[i] = tickets.ownerOf(prizeTokenIds[i]);
     }
 
-    function getRaffleTickets(uint256 raffleId) external view returns (address) {
-        return raffles[raffleId].tickets;
+    function getRaffle(uint256 raffleId) external view returns (Raffle memory) {
+        return raffles[raffleId];
     }
 
-    function queryRaffles(uint256 from, uint256 to)
-        external
-        view
-        returns (
-            address[] memory tickets,
-            uint256[] memory start,
-            uint256[] memory end,
-            uint256[] memory price,
-            uint256[] memory requirement,
-            uint256[] memory ticketSupply,
-            uint256[] memory maxSupply,
-            // uint256[] memory ticketBalance,
-            address[][] memory toys,
-            uint256[][] memory ids
-        )
-    {
-        tickets = new address[](to - from);
-        start = new uint256[](to - from);
-        end = new uint256[](to - from);
-        price = new uint256[](to - from);
-
-        toys = new address[][](to - from);
-        ids = new uint256[][](to - from);
-
-        ticketSupply = new uint256[](to - from);
-        maxSupply = new uint256[](to - from);
-        // ticketBalance = new uint256[](to - from);
-
-        requirement = new uint256[](to - from);
-
-        for (uint256 i; i < to - from; ++i) {
-            tickets[i] = raffles[from + i].tickets;
-            start[i] = raffles[from + i].start;
-            end[i] = raffles[from + i].end;
-            price[i] = raffles[from + i].price;
-            requirement[i] = raffles[from + i].requirement;
-            toys[i] = raffles[from + i].toys;
-            ids[i] = raffles[from + i].ids;
-
-            // ticketBalance[i] = Tickets(raffles[from + i].tickets).balanceOf(msg.sender);
-            ticketSupply[i] = raffles[from + i].ticketSupply;
-            maxSupply[i] = raffles[from + i].maxSupply;
+    function fulfillsRequirement(
+        address user,
+        uint256 requirement,
+        uint256 data
+    ) public returns (bool) {
+        unchecked {
+            if (requirement == 1 && genesis.numOwned(user) > 0) return true;
+            if (requirement == 2 && troupe.numOwned(user) > 0) return true;
+            if (
+                requirement == 3 &&
+                // specify data == 1 to direct that user is holding troupe and potentially save an sload;
+                // or leave unspecified and worst-case check both
+                ((data != 2 && troupe.numOwned(user) > 0) || (data != 1 && genesis.numOwned(user) > 0))
+            ) return true;
+            if (
+                requirement == 4 &&
+                (
+                    data > 5000 // specify owner-held id: data > 5000 refers to genesis collection
+                        ? genesis.getLevel(data - 5000) > 1 && genesis.ownerOf(data - 5000) == user
+                        : troupe.getLevel(data) > 1 && troupe.ownerOf(data) == user
+                )
+            ) return true;
+            if (
+                requirement == 5 &&
+                (
+                    data > 5000
+                        ? genesis.getLevel(data - 5000) > 2 && genesis.ownerOf(data - 5000) == user
+                        : troupe.getLevel(data) > 2 && troupe.ownerOf(data) == user
+                )
+            ) return true;
+            return false;
         }
     }
 
@@ -229,9 +252,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
     function ticketsName() external view returns (string memory) {
         uint256 raffleId = ticketsToRaffleId[msg.sender];
-        string memory name = raffleNames[raffleId];
-        if (bytes(name).length == 0) return string.concat("Raffle Tickets #", raffleId.toString());
-        return name;
+        return string.concat("Raffle Tickets #", raffleId.toString());
     }
 
     function ticketsSymbol() external view returns (string memory) {
@@ -250,52 +271,56 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     /* ------------- Owner ------------- */
 
     function feedToys(
-        address[] calldata toys,
-        uint256[] calldata ids,
-        uint256 start,
-        uint256 end,
-        uint256 requirement,
-        uint256 price,
-        uint256 maxSupply
+        address prizeNFT,
+        uint256[] calldata prizeTokenIds,
+        uint40 start,
+        uint40 end,
+        uint40 ticketPrice,
+        uint16 refundRate,
+        uint40 maxTicketSupply,
+        uint8 requirement
     ) external onlyOwner {
-        for (uint256 i; i < toys.length; ++i) IERC721(toys[i]).transferFrom(msg.sender, address(this), ids[i]);
+        for (uint256 i; i < prizeTokenIds.length; ++i)
+            IERC721(prizeNFT).transferFrom(msg.sender, address(this), prizeTokenIds[i]);
 
         uint256 raffleId = ++numRaffles;
         Raffle storage raffle = raffles[raffleId];
 
         if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
-        if (end < start) revert InvalidTimestamps();
-        // if (end < start || start < block.timestamp) revert InvalidTimestamps();
+        if (start < block.timestamp || end <= start || end - start > ONE_MONTH) revert InvalidTimestamps();
+        if (ticketPrice >= 1e18) revert InvalidTicketPrice();
 
         address tickets = createClone(ticketsImplementation);
         ticketsToRaffleId[tickets] = raffleId;
 
         raffle.tickets = tickets;
-        raffle.toys = toys;
-        raffle.ids = ids;
+        raffle.prizeNFT = prizeNFT;
+        raffle.prizeTokenIds = prizeTokenIds;
         raffle.start = start;
         raffle.end = end;
-        raffle.price = price;
-        raffle.maxSupply = maxSupply;
+        raffle.ticketPrice = ticketPrice;
+        raffle.refundRate = refundRate;
+        raffle.maxTicketSupply = maxTicketSupply;
         raffle.requirement = requirement;
 
         emit Kachingg();
     }
 
-    function rescueToys(address[] calldata toys, uint256[] calldata ids) external onlyOwner {
-        for (uint256 i; i < toys.length; ++i) IERC721(toys[i]).transferFrom(address(this), msg.sender, ids[i]);
+    function rescueToys(address prizeNFT, uint256[] calldata prizeTokenIds) external onlyOwner {
+        for (uint256 i; i < prizeTokenIds.length; ++i)
+            IERC721(prizeNFT).transferFrom(address(this), msg.sender, prizeTokenIds[i]);
     }
 
     function cancelRaffle(uint256 raffleId) external onlyOwner {
         Raffle storage raffle = raffles[raffleId];
 
-        uint256 numToys = raffle.toys.length;
+        uint256 numToys = raffle.prizeTokenIds.length;
 
-        // @note check cancelled
-        // raffle.cancelled = true;
+        if (raffle.cancelled) revert RaffleAlreadyCancelled();
 
+        IERC721 prizeNFT = IERC721(raffle.prizeNFT);
         for (uint256 i; i < numToys; ++i)
-            IERC721(raffle.toys[i]).transferFrom(address(this), msg.sender, raffles[raffleId].ids[i]);
+            prizeNFT.transferFrom(address(this), msg.sender, raffles[raffleId].prizeTokenIds[i]);
 
         raffle.cancelled = true;
     }
@@ -312,18 +337,6 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
         emit Grapple();
         emit Grapple();
-    }
-
-    function setRaffleRefund(uint256 percentage) external onlyOwner {
-        raffleRefund = percentage;
-    }
-
-    function setGouda(IGouda gouda_) external onlyOwner {
-        gouda = gouda_;
-    }
-
-    function setRaffleName(uint256 raffleId, string calldata name) external onlyOwner {
-        raffleNames[raffleId] = name;
     }
 
     function setTicketsImplementation(address ticketsImplementation_) external onlyOwner {
@@ -350,10 +363,10 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         if (raffle.randomSeed != 0) revert MachineBeDoinWork();
 
         emit BZZzzt();
-        // on-chain requires block.number - 1, forge block number starts at 0...
+        // on-chain requires block.number - 1, forge block number starts at 0 and errs...
         // raffle.randomSeed = uint256(blockhash(block.number - 1));
         // @note FIX
-        raffle.randomSeed = uint256(keccak256(abi.encode(raffleId)));
+        raffle.randomSeed = uint40(uint256(keccak256(abi.encode(block.timestamp))));
     }
 
     /* ------------- Internal ------------- */
@@ -365,7 +378,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         Raffle storage raffle = raffles[raffleId];
         if (!raffle.cancelled && raffle.randomSeed == 0) {
             emit BZZzzt();
-            raffle.randomSeed = randomWords[0];
+            raffle.randomSeed = uint40(randomWords[0]);
         }
     }
 

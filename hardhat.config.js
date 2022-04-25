@@ -64,7 +64,7 @@ module.exports = {
   networks: {
     ...networkSettings,
     hardhat: {
-      allowUnlimitedContractSize: true,
+      // allowUnlimitedContractSize: true,
     },
   },
   mocha: {
