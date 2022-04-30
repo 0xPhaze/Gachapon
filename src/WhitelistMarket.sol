@@ -1,15 +1,55 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {Ownable} from "./lib/Ownable.sol";
-import {Gouda} from "./lib/Gouda.sol";
-import {IMadMouse} from "./lib/interfaces.sol";
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM`MMM NMM MMM MMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM  MMMMhMMMMMMM  MMMMMMMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM  MM-MMMMM   MMMM    MMMM   lMMMDMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMM jMMMMl   MM    MMM  M  MMM   M   MMMM MMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMM MMMMMMMMM  , `     M   Y   MM  MMM  BMMMMMM MMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMM MMMMMMMMMMMM  IM  MM  l  MMM  X   MM.  MMMMMMMMMM MMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.nlMMMMMMMMMMMMMMMMM]._  MMMMMMMMMMMMMMMNMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMM TMMMMMMMMMMMMMMMMMM          +MMMMMMMMMMMM:  rMMMMMMMMN MMMMMMMMMMMMMM
+// MMMMMMMMMMMM MMMMMMMMMMMMMMMM                  MMMMMM           MMMMMMMM qMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMM^                   MMMb              .MMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMM MMMMMMMMMMMMMMM                     MM                  MMMMMMM MMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM                     M                   gMMMMMMMMMMMMMMMMM
+// MMMMMMMMu MMMMMMMMMMMMMMM                                           MMMMMMM .MMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMM                                           :MMMMMMMMMMMMMMMM
+// MMMMMMM^ MMMMMMMMMMMMMMMl                                            MMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMM                                             MMMMMMMMMMMMMMMM
+// MMMMMMM MMMMMMMMMMMMMMMM                                             MMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMM                                             MMMMMMMMMMMMMMMM
+// MMMMMMr MMMMMMMMMMMMMMMM                                             MMMMMMMM .MMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMM                                           MMMMMMMMMMMMMMMMM
+// MMMMMMM MMMMMMMMMMMMMMMMM                                         DMMMMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM                              MMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMM|`MMMMMMMMMMMMMMMM         q                      MMMMMMMMMMMMMMMMMMM  MMMMMMM
+// MMMMMMMMMTMMMMMMMMMMMMMMM                               qMMMMMMMMMMMMMMMMMMgMMMMMMMMM
+// MMMMMMMMq MMMMMMMMMMMMMMMh                             jMMMMMMMMMMMMMMMMMMM nMMMMMMMM
+// MMMMMMMMMM MMMMMMMMMMMMMMMQ      nc    -MMMMMn        MMMMMMMMMMMMMMMMMMMM MMMMMMMMMM
+// MMMMMMMMMM.MMMMMMMMMMMMMMMMMMl            M1       `MMMMMMMMMMMMMMMMMMMMMMrMMMMMMMMMM
+// MMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMM               :MMMMMMMMMM MMMMMMMMMMMM qMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM  MMMMMMX       MMMMMMMMMMMMMMM  uMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMM DMMMMMMMMM   IMMMMMMMMMMMMMMMMMMMMMMM   M   Y  MMMMMMMN MMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMM MMMMMM    ``    M      MM  MMM   , MMMM    Mv  MMM MMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMM MMh  Ml  .   M  MMMM  I  MMMT  M     :M   ,MMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMM MMMMMMMMt  MM  MMMMB m  ]MMM  MMMM   MMMMMM MMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMM MMMMM  MMM   TM   MM  9U  .MM  _MMMMM MMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM YMMMMMMMn     MMMM    +MMMMMMM1`MMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.`MMM MMM MMMMM`.MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM author: phaze MMM
 
-error WhitelistMarket__NoWhitelistRemaining();
-error WhitelistMarket__MaxEntriesReached();
-error WhitelistMarket__ContractCallNotAllowed();
-error WhitelistMarket__NotActive();
-error WhitelistMarket__RequirementNotFulfilled();
+import {Ownable} from "./lib/Ownable.sol";
+import {IGouda, IMadMouse} from "./lib/interfaces.sol";
+
+error NoWhitelistRemaining();
+error MaxEntriesReached();
+error ContractCallNotAllowed();
+error NotActive();
+error RequirementNotFulfilled();
 
 contract WhitelistMarket is Ownable {
     event BurnForWhitelist(address indexed user, bytes32 indexed id);
@@ -17,16 +57,12 @@ contract WhitelistMarket is Ownable {
     mapping(bytes32 => uint256) public totalSupply;
     mapping(bytes32 => mapping(address => uint256)) public numEntries;
 
-    // Gouda constant gouda = Gouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
-    // address constant genesis = Gouda(0x3ad30c5e2985e960e89f4a28efc91ba73e104b77);
-    // address constant troupe = Gouda(0x74d9d90a7fc261fbe92ed47b606b6e0e00d75e70);
-
-    Gouda immutable gouda;
+    IGouda immutable gouda;
     IMadMouse immutable genesis;
     IMadMouse immutable troupe;
 
     constructor(
-        Gouda gouda_,
+        IGouda gouda_,
         IMadMouse genesis_,
         IMadMouse troupe_
     ) {
@@ -49,11 +85,11 @@ contract WhitelistMarket is Ownable {
         unchecked {
             bytes32 hash = getWhitelistHash(start, end, price, maxSupply, maxEntries, requirement);
 
-            if (++totalSupply[hash] > maxSupply) revert WhitelistMarket__NoWhitelistRemaining();
-            if (++numEntries[hash][msg.sender] > maxEntries) revert WhitelistMarket__MaxEntriesReached();
-            if (block.timestamp < start || end < block.timestamp) revert WhitelistMarket__NotActive();
+            if (++totalSupply[hash] > maxSupply) revert NoWhitelistRemaining();
+            if (++numEntries[hash][msg.sender] > maxEntries) revert MaxEntriesReached();
+            if (block.timestamp < start || end < block.timestamp) revert NotActive();
             if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
-                revert WhitelistMarket__RequirementNotFulfilled();
+                revert RequirementNotFulfilled();
 
             gouda.burnFrom(msg.sender, price);
             emit BurnForWhitelist(msg.sender, hash);
@@ -73,6 +109,10 @@ contract WhitelistMarket is Ownable {
         return keccak256(abi.encode(start, end, price, maxSupply, maxEntries, requirement));
     }
 
+    // 1: genesis
+    // 2: troupe
+    // 3: level >= 2
+    // 4: level == 3
     function fulfillsRequirement(
         address user,
         uint256 requirement,
@@ -80,14 +120,14 @@ contract WhitelistMarket is Ownable {
     ) public returns (bool) {
         unchecked {
             if (requirement == 1 && genesis.numOwned(user) > 0) return true;
-            if (requirement == 2 && troupe.numOwned(user) > 0) return true;
-            if (
+            else if (requirement == 2 && troupe.numOwned(user) > 0) return true;
+            else if (
                 requirement == 3 &&
                 // specify data == 1 to direct that user is holding troupe and potentially save an sload;
                 // or leave unspecified and worst-case check both
                 ((data != 2 && troupe.numOwned(user) > 0) || (data != 1 && genesis.numOwned(user) > 0))
             ) return true;
-            if (
+            else if (
                 requirement == 4 &&
                 (
                     data > 5000 // specify owner-held id: data > 5000 refers to genesis collection
@@ -95,7 +135,7 @@ contract WhitelistMarket is Ownable {
                         : troupe.getLevel(data) > 1 && troupe.ownerOf(data) == user
                 )
             ) return true;
-            if (
+            else if (
                 requirement == 5 &&
                 (
                     data > 5000
@@ -110,7 +150,7 @@ contract WhitelistMarket is Ownable {
     /* ------------- Modifier ------------- */
 
     modifier noContract() {
-        if (msg.sender != tx.origin) revert WhitelistMarket__ContractCallNotAllowed();
+        if (msg.sender != tx.origin) revert ContractCallNotAllowed();
         _;
     }
 }

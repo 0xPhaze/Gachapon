@@ -1,6 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+// author: phaze
+
+// assumption: n << m
 // caveats: splits random number into 16 parts for efficiency
 // this means that 65536 is the highest random number
 // (can skew uniform distributions when m is hight)

@@ -12,6 +12,8 @@ interface IGouda {
 
     function balanceOf(address account) external view returns (uint256);
 
+    function mint(address user, uint256 amount) external;
+
     function burnFrom(address account, uint256 amount) external;
 }
 

@@ -1,20 +1,56 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM`MMM NMM MMM MMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM  MMMMhMMMMMMM  MMMMMMMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM  MM-MMMMM   MMMM    MMMM   lMMMDMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMM jMMMMl   MM    MMM  M  MMM   M   MMMM MMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMM MMMMMMMMM  , `     M   Y   MM  MMM  BMMMMMM MMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMM MMMMMMMMMMMM  IM  MM  l  MMM  X   MM.  MMMMMMMMMM MMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.nlMMMMMMMMMMMMMMMMM]._  MMMMMMMMMMMMMMMNMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMM TMMMMMMMMMMMMMMMMMM          +MMMMMMMMMMMM:  rMMMMMMMMN MMMMMMMMMMMMMM
+// MMMMMMMMMMMM MMMMMMMMMMMMMMMM                  MMMMMM           MMMMMMMM qMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMM^                   MMMb              .MMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMM MMMMMMMMMMMMMMM                     MM                  MMMMMMM MMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM                     M                   gMMMMMMMMMMMMMMMMM
+// MMMMMMMMu MMMMMMMMMMMMMMM                                           MMMMMMM .MMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMM                                           :MMMMMMMMMMMMMMMM
+// MMMMMMM^ MMMMMMMMMMMMMMMl                                            MMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMM                                             MMMMMMMMMMMMMMMM
+// MMMMMMM MMMMMMMMMMMMMMMM                                             MMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMM                                             MMMMMMMMMMMMMMMM
+// MMMMMMr MMMMMMMMMMMMMMMM                                             MMMMMMMM .MMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMM                                           MMMMMMMMMMMMMMMMM
+// MMMMMMM MMMMMMMMMMMMMMMMM                                         DMMMMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM                              MMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMM|`MMMMMMMMMMMMMMMM         q                      MMMMMMMMMMMMMMMMMMM  MMMMMMM
+// MMMMMMMMMTMMMMMMMMMMMMMMM                               qMMMMMMMMMMMMMMMMMMgMMMMMMMMM
+// MMMMMMMMq MMMMMMMMMMMMMMMh                             jMMMMMMMMMMMMMMMMMMM nMMMMMMMM
+// MMMMMMMMMM MMMMMMMMMMMMMMMQ      nc    -MMMMMn        MMMMMMMMMMMMMMMMMMMM MMMMMMMMMM
+// MMMMMMMMMM.MMMMMMMMMMMMMMMMMMl            M1       `MMMMMMMMMMMMMMMMMMMMMMrMMMMMMMMMM
+// MMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMM               :MMMMMMMMMM MMMMMMMMMMMM qMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM  MMMMMMX       MMMMMMMMMMMMMMM  uMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMM DMMMMMMMMM   IMMMMMMMMMMMMMMMMMMMMMMM   M   Y  MMMMMMMN MMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMM MMMMMM    ``    M      MM  MMM   , MMMM    Mv  MMM MMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMM MMh  Ml  .   M  MMMM  I  MMMT  M     :M   ,MMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMM MMMMMMMMt  MM  MMMMB m  ]MMM  MMMM   MMMMMM MMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMM MMMMM  MMM   TM   MM  9U  .MM  _MMMMM MMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM YMMMMMMMn     MMMM    +MMMMMMM1`MMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.`MMM MMM MMMMM`.MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM author: phaze MMM
+
 import {Strings} from "../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IERC721} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
-
-// import {VRFSubscriptionManagerMainnet as VRFSubscriptionManager} from "./lib/VRFSubscriptionManager.sol";
-import {VRFSubscriptionManagerMock as VRFSubscriptionManager} from "./lib/VRFSubscriptionManager.sol";
+import {IERC721Metadata} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721Metadata.sol";
 
 import {IGouda, IMadMouse} from "./lib/interfaces.sol";
 import {Ownable} from "./lib/Ownable.sol";
 import {Choice} from "./lib/Choice.sol";
-import {Gouda} from "./lib/Gouda.sol";
 
-import {Tickets} from "./Tickets.sol";
-
-import {console} from "../lib/forge-std/src/console.sol";
+import {SoulboundTickets as Tickets} from "./SoulboundTickets.sol";
 
 error RaffleNotActive();
 error RaffleOngoing();
@@ -33,11 +69,13 @@ error InvalidTimestamps();
 error InvalidTicketPrice();
 error RequirementNotFulfilled();
 
-contract Gachapon is Ownable, VRFSubscriptionManager {
+error ContractCallNotAllowed();
+
+contract Gachapon is Ownable {
     using Strings for uint256;
 
-    event Kachingg();
-    event Grapple();
+    event Chachingg();
+    event GrappleGrapple();
     event BZZzzt();
 
     struct Raffle {
@@ -52,8 +90,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         address tickets;
         uint40 randomSeed;
         address prizeNFT;
-        uint256[] prizeTokenIds;
-        // can split off numPrizes
+        uint32[] prizeTokenIds;
     }
 
     string ticketURI = "ipfs://QmSwrzsySKnkQmRQoZYmZ2XuJx3NMn2awdHwf1fezAJbq3/silver-ticket.json";
@@ -71,16 +108,12 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
     uint256 constant ONE_MONTH = 3600 * 24 * 28;
 
-    // Gouda constant gouda = Gouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
-    // address constant genesis = Gouda(0x3ad30c5e2985e960e89f4a28efc91ba73e104b77);
-    // address constant troupe = Gouda(0x74d9d90a7fc261fbe92ed47b606b6e0e00d75e70);
-
-    Gouda immutable gouda;
+    IGouda immutable gouda;
     IMadMouse immutable genesis;
     IMadMouse immutable troupe;
 
     constructor(
-        Gouda gouda_,
+        IGouda gouda_,
         IMadMouse genesis_,
         IMadMouse troupe_
     ) {
@@ -91,7 +124,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
     /* ------------- External ------------- */
 
-    function buyTicket(uint256 raffleId, uint256 requirementData) external {
+    function buyTicket(uint256 raffleId, uint256 requirementData) external noContract {
         Raffle storage raffle = raffles[raffleId];
         uint256 ticketSupply = raffle.ticketSupply;
 
@@ -104,7 +137,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             revert RequirementNotFulfilled();
 
         unchecked {
-            gouda.transferFrom(msg.sender, address(this), raffle.ticketPrice * 1e18);
+            gouda.burnFrom(msg.sender, uint256(raffle.ticketPrice) * 1e18);
         }
 
         uint256 ticketId = ++ticketSupply;
@@ -113,7 +146,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         Tickets(raffle.tickets).mint(msg.sender, ticketId);
     }
 
-    function claimPrize(uint256 raffleId, uint256 ticketId) external {
+    function claimPrize(uint256 raffleId, uint256 ticketId) external noContract {
         Raffle storage raffle = raffles[raffleId];
         Tickets tickets = Tickets(raffle.tickets);
 
@@ -125,10 +158,14 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         uint256 numPrizes = raffle.prizeTokenIds.length;
         uint256 numEntrants = raffle.ticketSupply;
 
-        (bool win, uint256 prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
+        bool win;
+        uint256 prizeId;
 
-        // don't burn, keep as a souvenir
-        // tickets.burnFrom(msg.sender, ticketId);
+        // ticketId starts at 1
+        unchecked {
+            (win, prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
+        }
+
         if (tickets.ownerOf(ticketId) != msg.sender || !win) revert BetterLuckNextTime();
         if (claimedPrize[raffleId][ticketId]) revert PrizeAlreadyClaimed();
 
@@ -138,10 +175,11 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         prizeNFT.transferFrom(address(this), msg.sender, raffle.prizeTokenIds[prizeId]);
     }
 
-    function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external {
+    function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external noContract {
         Raffle storage raffle;
 
         uint256 refund;
+        uint256 refundRate;
 
         uint256 numBurnTickets = burnTicketIds.length;
         if (numBurnTickets == 0) revert NeedsMoarTickets();
@@ -152,16 +190,18 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
                 Tickets tickets = Tickets(raffle.tickets);
 
                 tickets.burnFrom(msg.sender, burnTicketIds[i]);
-                refund += (raffle.ticketPrice * 1e18 * raffle.refundRate) >> 16;
+
+                refundRate = raffle.refundRate;
+                if (refundRate > 0) refund += (uint256(raffle.ticketPrice) * 1e18 * refundRate) >> 16;
             }
         }
 
-        gouda.transfer(msg.sender, refund);
+        gouda.mint(msg.sender, refund);
     }
 
     /* ------------- View ------------- */
 
-    function isWinningTicket(uint256 raffleId, uint256 ticketId) public view returns (bool) {
+    function isWinningTicket(uint256 raffleId, uint256 ticketId) public view returns (bool win) {
         Raffle storage raffle = raffles[raffleId];
         uint256 randomSeed = raffle.randomSeed;
 
@@ -170,7 +210,9 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         uint256 numPrizes = raffle.prizeTokenIds.length;
         uint256 numEntrants = raffle.ticketSupply;
 
-        (bool win, ) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
+        unchecked {
+            (win, ) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
+        }
         return win;
     }
 
@@ -188,17 +230,9 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     }
 
     function getWinners(uint256 raffleId) public view returns (address[] memory winners) {
-        Raffle storage raffle = raffles[raffleId];
+        Tickets tickets = Tickets(raffles[raffleId].tickets);
 
-        uint256 randomSeed = raffle.randomSeed;
-
-        if (raffle.cancelled || randomSeed == 0) return winners;
-
-        uint256 numPrizes = raffle.prizeTokenIds.length;
-        uint256 numEntrants = raffle.ticketSupply;
-        Tickets tickets = Tickets(raffle.tickets);
-
-        uint256[] memory prizeTokenIds = Choice.selectNOfM(numPrizes, numEntrants, randomSeed, 1);
+        uint256[] memory prizeTokenIds = getWinningTickets(raffleId);
         uint256 numIds = prizeTokenIds.length;
 
         winners = new address[](numIds);
@@ -216,14 +250,14 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
     ) public returns (bool) {
         unchecked {
             if (requirement == 1 && genesis.numOwned(user) > 0) return true;
-            if (requirement == 2 && troupe.numOwned(user) > 0) return true;
-            if (
+            else if (requirement == 2 && troupe.numOwned(user) > 0) return true;
+            else if (
                 requirement == 3 &&
                 // specify data == 1 to direct that user is holding troupe and potentially save an sload;
                 // or leave unspecified and worst-case check both
                 ((data != 2 && troupe.numOwned(user) > 0) || (data != 1 && genesis.numOwned(user) > 0))
             ) return true;
-            if (
+            else if (
                 requirement == 4 &&
                 (
                     data > 5000 // specify owner-held id: data > 5000 refers to genesis collection
@@ -231,7 +265,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
                         : troupe.getLevel(data) > 1 && troupe.ownerOf(data) == user
                 )
             ) return true;
-            if (
+            else if (
                 requirement == 5 &&
                 (
                     data > 5000
@@ -252,7 +286,8 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
     function ticketsName() external view returns (string memory) {
         uint256 raffleId = ticketsToRaffleId[msg.sender];
-        return string.concat("Raffle Tickets #", raffleId.toString());
+        string memory prizeNFTName = IERC721Metadata(raffles[raffleId].prizeNFT).name();
+        return string.concat("Gouda Slot Machine Raffle #", raffleId.toString(), ": ", prizeNFTName);
     }
 
     function ticketsSymbol() external view returns (string memory) {
@@ -272,7 +307,7 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
 
     function feedToys(
         address prizeNFT,
-        uint256[] calldata prizeTokenIds,
+        uint32[] calldata prizeTokenIds,
         uint40 start,
         uint40 end,
         uint40 ticketPrice,
@@ -280,110 +315,99 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
         uint40 maxTicketSupply,
         uint8 requirement
     ) external onlyOwner {
-        for (uint256 i; i < prizeTokenIds.length; ++i)
-            IERC721(prizeNFT).transferFrom(msg.sender, address(this), prizeTokenIds[i]);
+        unchecked {
+            for (uint256 i; i < prizeTokenIds.length; ++i)
+                IERC721(prizeNFT).transferFrom(msg.sender, address(this), prizeTokenIds[i]);
 
-        uint256 raffleId = ++numRaffles;
-        Raffle storage raffle = raffles[raffleId];
+            uint256 raffleId = ++numRaffles;
+            Raffle storage raffle = raffles[raffleId];
 
-        if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
-        if (start < block.timestamp || end <= start || end - start > ONE_MONTH) revert InvalidTimestamps();
-        if (ticketPrice >= 1e18) revert InvalidTicketPrice();
+            if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
+            if (start < block.timestamp || end <= start || end - start > ONE_MONTH) revert InvalidTimestamps();
+            if (ticketPrice >= 1e18) revert InvalidTicketPrice();
 
-        address tickets = createClone(ticketsImplementation);
-        ticketsToRaffleId[tickets] = raffleId;
+            address tickets = createTicketsClone(ticketsImplementation);
+            ticketsToRaffleId[tickets] = raffleId;
 
-        raffle.tickets = tickets;
-        raffle.prizeNFT = prizeNFT;
-        raffle.prizeTokenIds = prizeTokenIds;
-        raffle.start = start;
-        raffle.end = end;
-        raffle.ticketPrice = ticketPrice;
-        raffle.refundRate = refundRate;
-        raffle.maxTicketSupply = maxTicketSupply;
-        raffle.requirement = requirement;
+            raffle.tickets = tickets;
+            raffle.prizeNFT = prizeNFT;
+            raffle.prizeTokenIds = prizeTokenIds;
+            raffle.start = start;
+            raffle.end = end;
+            raffle.ticketPrice = ticketPrice;
+            raffle.refundRate = refundRate;
+            raffle.maxTicketSupply = maxTicketSupply;
+            raffle.requirement = requirement;
 
-        emit Kachingg();
+            emit Chachingg();
+        }
     }
 
-    function rescueToys(address prizeNFT, uint256[] calldata prizeTokenIds) external onlyOwner {
-        for (uint256 i; i < prizeTokenIds.length; ++i)
-            IERC721(prizeNFT).transferFrom(address(this), msg.sender, prizeTokenIds[i]);
+    function editRaffle(
+        address prizeNFT,
+        uint32[] calldata prizeTokenIds,
+        uint40 start,
+        uint40 end,
+        uint40 ticketPrice,
+        uint16 refundRate,
+        uint40 maxTicketSupply,
+        uint8 requirement
+    ) external onlyOwner {}
+
+    function rescueToys(IERC721 toy, uint256[] calldata toyIds) external onlyOwner {
+        unchecked {
+            for (uint256 i; i < toyIds.length; ++i) toy.transferFrom(address(this), msg.sender, toyIds[i]);
+        }
     }
 
     function cancelRaffle(uint256 raffleId) external onlyOwner {
-        Raffle storage raffle = raffles[raffleId];
+        unchecked {
+            Raffle storage raffle = raffles[raffleId];
 
-        uint256 numToys = raffle.prizeTokenIds.length;
+            uint256 numToys = raffle.prizeTokenIds.length;
 
-        if (raffle.cancelled) revert RaffleAlreadyCancelled();
+            if (raffle.cancelled) revert RaffleAlreadyCancelled();
 
-        IERC721 prizeNFT = IERC721(raffle.prizeNFT);
-        for (uint256 i; i < numToys; ++i)
-            prizeNFT.transferFrom(address(this), msg.sender, raffles[raffleId].prizeTokenIds[i]);
+            IERC721 prizeNFT = IERC721(raffle.prizeNFT);
+            for (uint256 i; i < numToys; ++i) {
+                try prizeNFT.transferFrom(address(this), msg.sender, raffles[raffleId].prizeTokenIds[i]) {} catch {}
+            }
 
-        raffle.cancelled = true;
+            raffle.cancelled = true;
+        }
     }
 
     function initiateGrappler(uint256 raffleId) external onlyOwner {
         Raffle storage raffle = raffles[raffleId];
 
         if (raffle.cancelled) revert RaffleNotActive();
-        if (block.timestamp <= raffle.end) revert RaffleOngoing();
-        if (raffle.randomSeed != 0) revert RaffleRandomSeedSet();
+        if (block.timestamp < raffle.end) revert RaffleOngoing();
+        if (raffle.randomSeed != 0) revert MachineBeDoinWork();
 
-        uint256 requestId = requestRandomWords();
-        requestIdToLot[requestId] = raffleId;
+        emit GrappleGrapple();
+        emit BZZzzt();
 
-        emit Grapple();
-        emit Grapple();
+        raffle.randomSeed = uint40(uint256(blockhash(block.number - 1)));
     }
 
     function setTicketsImplementation(address ticketsImplementation_) external onlyOwner {
         ticketsImplementation = ticketsImplementation_;
     }
 
-    function setWinningTicketURI(string calldata uri) external onlyOwner {
-        winningTicketURI = uri;
+    function setTicketURIs(
+        string calldata ticketURI_,
+        string calldata losingTicketURI_,
+        string calldata winningTicketURI_
+    ) external onlyOwner {
+        ticketURI = ticketURI_;
+        losingTicketURI = losingTicketURI_;
+        winningTicketURI = winningTicketURI_;
     }
 
-    function setLosingTicketURI(string calldata uri) external onlyOwner {
-        losingTicketURI = uri;
-    }
-
-    function setTicketURI(string calldata uri) external onlyOwner {
-        ticketURI = uri;
-    }
-
-    function kickStuckMachine(uint256 raffleId) external onlyOwner {
-        Raffle storage raffle = raffles[raffleId];
-
-        if (raffle.cancelled) revert RaffleNotActive();
-        if (block.timestamp < raffle.end) revert RaffleOngoing();
-        if (raffle.randomSeed != 0) revert MachineBeDoinWork();
-
-        emit BZZzzt();
-        // on-chain requires block.number - 1, forge block number starts at 0 and errs...
-        // raffle.randomSeed = uint256(blockhash(block.number - 1));
-        // @note FIX
-        raffle.randomSeed = uint40(uint256(keccak256(abi.encode(block.timestamp))));
-    }
-
-    /* ------------- Internal ------------- */
-
-    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
-        uint256 raffleId = requestIdToLot[requestId];
-        delete requestIdToLot[requestId];
-
-        Raffle storage raffle = raffles[raffleId];
-        if (!raffle.cancelled && raffle.randomSeed == 0) {
-            emit BZZzzt();
-            raffle.randomSeed = uint40(randomWords[0]);
-        }
-    }
+    /* ------------- Private ------------- */
 
     // https://github.com/optionality/clone-factory/blob/master/contracts/CloneFactory.sol
-    function createClone(address target) private returns (address result) {
+    function createTicketsClone(address target) private returns (address result) {
         bytes20 targetBytes = bytes20(target);
         assembly {
             let clone := mload(0x40)
@@ -392,5 +416,12 @@ contract Gachapon is Ownable, VRFSubscriptionManager {
             mstore(add(clone, 0x28), 0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000)
             result := create(0, clone, 0x37)
         }
+    }
+
+    /* ------------- Modifier ------------- */
+
+    modifier noContract() {
+        if (msg.sender != tx.origin) revert ContractCallNotAllowed();
+        _;
     }
 }

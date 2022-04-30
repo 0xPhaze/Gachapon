@@ -1,10 +1,49 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {console} from "../lib/forge-std/src/console.sol";
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM`MMM NMM MMM MMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM  MMMMhMMMMMMM  MMMMMMMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM  MM-MMMMM   MMMM    MMMM   lMMMDMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMM jMMMMl   MM    MMM  M  MMM   M   MMMM MMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMM MMMMMMMMM  , `     M   Y   MM  MMM  BMMMMMM MMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMM MMMMMMMMMMMM  IM  MM  l  MMM  X   MM.  MMMMMMMMMM MMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.nlMMMMMMMMMMMMMMMMM]._  MMMMMMMMMMMMMMMNMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMM TMMMMMMMMMMMMMMMMMM          +MMMMMMMMMMMM:  rMMMMMMMMN MMMMMMMMMMMMMM
+// MMMMMMMMMMMM MMMMMMMMMMMMMMMM                  MMMMMM           MMMMMMMM qMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMM^                   MMMb              .MMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMM MMMMMMMMMMMMMMM                     MM                  MMMMMMM MMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM                     M                   gMMMMMMMMMMMMMMMMM
+// MMMMMMMMu MMMMMMMMMMMMMMM                                           MMMMMMM .MMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMM                                           :MMMMMMMMMMMMMMMM
+// MMMMMMM^ MMMMMMMMMMMMMMMl                                            MMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMM                                             MMMMMMMMMMMMMMMM
+// MMMMMMM MMMMMMMMMMMMMMMM                                             MMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMM                                             MMMMMMMMMMMMMMMM
+// MMMMMMr MMMMMMMMMMMMMMMM                                             MMMMMMMM .MMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMM                                           MMMMMMMMMMMMMMMMM
+// MMMMMMM MMMMMMMMMMMMMMMMM                                         DMMMMMMMMMM MMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM                              MMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMM|`MMMMMMMMMMMMMMMM         q                      MMMMMMMMMMMMMMMMMMM  MMMMMMM
+// MMMMMMMMMTMMMMMMMMMMMMMMM                               qMMMMMMMMMMMMMMMMMMgMMMMMMMMM
+// MMMMMMMMq MMMMMMMMMMMMMMMh                             jMMMMMMMMMMMMMMMMMMM nMMMMMMMM
+// MMMMMMMMMM MMMMMMMMMMMMMMMQ      nc    -MMMMMn        MMMMMMMMMMMMMMMMMMMM MMMMMMMMMM
+// MMMMMMMMMM.MMMMMMMMMMMMMMMMMMl            M1       `MMMMMMMMMMMMMMMMMMMMMMrMMMMMMMMMM
+// MMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMM               :MMMMMMMMMM MMMMMMMMMMMM qMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM  MMMMMMX       MMMMMMMMMMMMMMM  uMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMM DMMMMMMMMM   IMMMMMMMMMMMMMMMMMMMMMMM   M   Y  MMMMMMMN MMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMM MMMMMM    ``    M      MM  MMM   , MMMM    Mv  MMM MMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMM MMh  Ml  .   M  MMMM  I  MMMT  M     :M   ,MMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMM MMMMMMMMt  MM  MMMMB m  ]MMM  MMMM   MMMMMM MMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMM MMMMM  MMM   TM   MM  9U  .MM  _MMMMM MMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMM YMMMMMMMn     MMMM    +MMMMMMM1`MMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.`MMM MMM MMMMM`.MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+// MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM author: phaze MMM
 
 import {Ownable} from "./lib/Ownable.sol";
-import {Gouda} from "./lib/Gouda.sol";
+import {IGouda} from "./lib/interfaces.sol";
 import {IMadMouse} from "./lib/interfaces.sol";
 
 import {IERC721} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
@@ -54,19 +93,15 @@ contract AuctionHouse is Ownable {
     mapping(uint256 => Auction) public auctions;
     mapping(uint256 => mapping(address => uint256)) public bids;
 
-    // Gouda constant gouda = Gouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
-    // address constant genesis = Gouda(0x3ad30c5e2985e960e89f4a28efc91ba73e104b77);
-    // address constant troupe = Gouda(0x74d9d90a7fc261fbe92ed47b606b6e0e00d75e70);
-
-    Gouda immutable gouda;
-    IMadMouse immutable genesis;
-    IMadMouse immutable troupe;
-
     uint256 constant ONE_MONTH = 3600 * 24 * 7 * 4;
     uint256 constant AUCTION_EXTEND_DURATION = 5 * 60;
 
+    IGouda immutable gouda;
+    IMadMouse immutable genesis;
+    IMadMouse immutable troupe;
+
     constructor(
-        Gouda gouda_,
+        IGouda gouda_,
         IMadMouse genesis_,
         IMadMouse troupe_
     ) {
@@ -84,9 +119,10 @@ contract AuctionHouse is Ownable {
     ) external noContract {
         Auction storage auction = auctions[auctionId];
 
+        if (bid <= auction.currentBid) revert BidTooLow();
+
         uint256 qualifierDuration = auction.qualifierDuration;
 
-        if (bid <= auction.currentBid) revert BidTooLow();
         unchecked {
             uint256 start = uint256(auction.start) + auction.qualifierDuration;
             uint256 duration = auction.duration;
@@ -123,7 +159,7 @@ contract AuctionHouse is Ownable {
         unchecked {
             // type(uint40).max * 1e18 < 2^256: can't overflow
             // underflow assumption: callerBid <= auction.currentBid < bid
-            gouda.transferFrom(msg.sender, address(this), (uint256(bid) - callerBid) * 1e18);
+            gouda.burnFrom(msg.sender, (uint256(bid) - callerBid) * 1e18);
             emit BidPlaced(auctionId, msg.sender, uint256(bid) * 1e18);
         }
 
@@ -138,14 +174,14 @@ contract AuctionHouse is Ownable {
     ) public returns (bool) {
         unchecked {
             if (requirement == 1 && genesis.numOwned(user) > 0) return true;
-            if (requirement == 2 && troupe.numOwned(user) > 0) return true;
-            if (
+            else if (requirement == 2 && troupe.numOwned(user) > 0) return true;
+            else if (
                 requirement == 3 &&
                 // specify data == 1 to direct that user is holding troupe and potentially save an sload;
                 // or leave unspecified and worst-case check both
                 ((data != 2 && troupe.numOwned(user) > 0) || (data != 1 && genesis.numOwned(user) > 0))
             ) return true;
-            if (
+            else if (
                 requirement == 4 &&
                 (
                     data > 5000 // specify owner-held id: data > 5000 refers to genesis collection
@@ -153,7 +189,7 @@ contract AuctionHouse is Ownable {
                         : troupe.getLevel(data) > 1 && troupe.ownerOf(data) == user
                 )
             ) return true;
-            if (
+            else if (
                 requirement == 5 &&
                 (
                     data > 5000
@@ -165,19 +201,18 @@ contract AuctionHouse is Ownable {
         }
     }
 
-    function claimPrize(uint256 auctionId) external {
+    function claimPrize(uint256 auctionId) external noContract {
         resolveBid(auctionId);
     }
 
-    function reclaimGouda(uint256 auctionId) external {
+    function reclaimGouda(uint256 auctionId) external noContract {
         resolveBid(auctionId);
     }
 
     function enterQualifier(uint256 auctionId, uint256 requirementData) external noContract {
         Auction storage auction = auctions[auctionId];
-        if (++auction.qualifierNumEntrants > auction.qualifierMaxEntrants) revert QualifierMaxEntrantsReached();
-
         unchecked {
+            if (++auction.qualifierNumEntrants > auction.qualifierMaxEntrants) revert QualifierMaxEntrantsReached();
             if (auction.qualifierDuration < block.timestamp - auction.start) revert QualifierInactive();
         }
 
@@ -187,7 +222,7 @@ contract AuctionHouse is Ownable {
 
         if (bids[auctionId][msg.sender] >= 1) revert QualifierAlreadyEntered();
 
-        gouda.transferFrom(msg.sender, address(this), 1e18);
+        gouda.burnFrom(msg.sender, 1e18);
         bids[auctionId][msg.sender] = 1;
     }
 
@@ -213,25 +248,27 @@ contract AuctionHouse is Ownable {
     /* ------------- Private ------------- */
 
     function resolveBid(uint256 auctionId) private {
-        Auction storage auction = auctions[auctionId];
-        uint256 qualifierDuration = auction.qualifierDuration;
-        uint256 end = auction.start + qualifierDuration + auction.duration;
-
-        if (block.timestamp <= end && !auction.cancelled) revert AuctionOngoing();
-
-        uint256 callerBid = bids[auctionId][msg.sender];
-        delete bids[auctionId][msg.sender];
-
-        if (callerBid == 0) revert NoBidPlaced();
-
         unchecked {
-            if (auction.currentBid == callerBid) {
+            Auction storage auction = auctions[auctionId];
+            uint256 qualifierDuration = auction.qualifierDuration;
+            uint256 end = auction.start + qualifierDuration + auction.duration;
+
+            bool cancelled = auction.cancelled;
+
+            if (block.timestamp <= end && !cancelled) revert AuctionOngoing();
+
+            uint256 callerBid = bids[auctionId][msg.sender];
+            delete bids[auctionId][msg.sender];
+
+            if (callerBid == 0) revert NoBidPlaced();
+
+            if (auction.currentBid == callerBid && !cancelled) {
                 IERC721(auction.prizeNFT).transferFrom(address(this), msg.sender, auction.prizeTokenId);
-                gouda.burnFrom(address(this), callerBid * 1e18);
             } else {
+                // callerBid >= 1
                 if (qualifierDuration != 0) callerBid -= 1; // keep the qualifier downpayment
                 if (callerBid == 0) revert NoBidPlaced();
-                gouda.transfer(msg.sender, callerBid * 1e18);
+                gouda.mint(msg.sender, callerBid * 1e18);
             }
         }
     }
@@ -278,22 +315,24 @@ contract AuctionHouse is Ownable {
         IERC721(auction.prizeNFT).transferFrom(address(this), msg.sender, auction.prizeTokenId);
     }
 
-    function forcefulfillQualifier(uint256 auctionId) external onlyOwner {
+    function revealQualifier(uint256 auctionId) external onlyOwner {
         Auction storage auction = auctions[auctionId];
 
         uint256 qualifierDuration = auction.qualifierDuration;
         if (qualifierDuration == 0) revert QualifierNotRequired();
 
-        uint256 start = auction.start;
+        unchecked {
+            if (block.timestamp < auction.start + qualifierDuration) revert QualifierRevealInvalidTimeFrame();
+            if (auction.qualifierRandomSeed != 0) revert QualifierRandomSeedSet();
 
-        if (start < block.timestamp) revert QualifierRevealInvalidTimeFrame();
-        if (auction.qualifierRandomSeed != 0) revert QualifierRandomSeedSet();
+            auction.qualifierRandomSeed = uint16(uint256(blockhash(block.number - 1)));
+        }
+    }
 
-        // extend period by lost time waiting for reveal
-        auction.qualifierDuration = uint40(block.timestamp - start + qualifierDuration);
-
-        // FIX
-        auction.qualifierRandomSeed = uint16(uint256(keccak256(abi.encode(block.timestamp))));
+    function rescueToys(IERC721 toy, uint256[] calldata toyIds) external onlyOwner {
+        unchecked {
+            for (uint256 i; i < toyIds.length; ++i) toy.transferFrom(address(this), msg.sender, toyIds[i]);
+        }
     }
 
     /* ------------- Modifier ------------- */

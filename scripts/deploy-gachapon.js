@@ -1,19 +1,23 @@
 const { ethers } = require("hardhat");
 
+// 0. hardcode addresses
+// 1. deploy tickets implementation
+// 2. set up tickets in gachapon
+// 3. set mint/burn role in gouda for all contracts (Gachapon, Auctions, Market (burn only))
+// 4. add links to website
+// 5. link websites
+// 6. transfer all ownership to vault??
+
 async function main() {
-  const genesis = await (await ethers.getContractFactory("MockMadMouse")).deploy();
-  console.log(`genesis: "${genesis.address}",`);
-  const troupe = await (await ethers.getContractFactory("MockMadMouse")).deploy();
-  console.log(`troupe: "${troupe.address}",`);
-  const deploy = await (await ethers.getContractFactory("TestDeployGachapon")).deploy(genesis.address, troupe.address);
+  const gachapon = await (await ethers.getContractFactory("Gachapon")).deploy();
 
-  console.log(`gouda: "${await deploy.gouda()}",`);
-  console.log(`gachapon: "${await deploy.gachapon()}",`);
-  console.log(`auctionHouse: "${await deploy.auctionHouse()}",`);
-  console.log(`whitelistMarket: "${await deploy.whitelistMarket()}",`);
+  console.log(`gachapon: "${gachapon.address}",`);
+  // console.log(`gachapon: "${await deploy.gachapon()}",`);
+  // console.log(`auctionHouse: "${await deploy.auctionHouse()}",`);
+  // console.log(`whitelistMarket: "${await deploy.whitelistMarket()}",`);
 
-  await deploy.initRaffles();
-  await deploy.initAuctions();
+  // await deploy.initRaffles();
+  // await deploy.initAuctions();
 
   // const Gachapon = await ethers.getContractFactory("Gachapon");
   // const gachapon = await Gachapon.deploy();

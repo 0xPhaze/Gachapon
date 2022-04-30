@@ -3,6 +3,7 @@ require("@nomiclabs/hardhat-etherscan");
 // require("hardhat-gas-reporter");
 // require("hardhat-contract-sizer");
 // require("solidity-coverage");
+require("hardhat-contract-sizer");
 require("dotenv").config();
 
 const networks = ["mainnet", "rinkeby", "kovan", "polygon", "mumbai", "avalanche", "fuji", "bsc", "bsctest"];
@@ -55,7 +56,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1000000,
+            runs: 10000,
           },
         },
       },
