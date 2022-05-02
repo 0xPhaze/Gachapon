@@ -21,7 +21,7 @@
     "yarn": "^1.22.18"
   },
   "scripts": {
-    "test": "forge test",
+    "test": "forge test -vvv --match-contract TestGachapon",
     "deploy": "npx hardhat run scripts/deploy.js"
   }
 }

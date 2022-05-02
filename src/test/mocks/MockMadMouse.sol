@@ -2,7 +2,8 @@
 pragma solidity >=0.8.0;
 
 import {MockERC721} from "./MockERC721.sol";
-import {IMadMouse} from "../interfaces.sol";
+
+// import {IMadMouse} from "../../lib/interfaces.sol";
 
 contract MockMadMouse is MockERC721("MadMouse", "MMC") {
     function numStaked(address) external pure returns (uint256) {

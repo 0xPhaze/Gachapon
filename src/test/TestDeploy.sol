@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.12;
 
-import {Gachapon} from "../../Gachapon.sol";
-import {AuctionHouse} from "../../AuctionHouse.sol";
-import {WhitelistMarket} from "../../WhitelistMarket.sol";
-import {SoulboundTickets} from "../../Tickets.sol";
+import {Gachapon} from "../Gachapon.sol";
+import {AuctionHouse} from "../AuctionHouse.sol";
+import {WhitelistMarket} from "../WhitelistMarket.sol";
+import {SoulboundTickets} from "../SoulboundTickets.sol";
 
-import {IGouda, IMadMouse} from "../interfaces.sol";
+import {MockGouda} from "./mocks/MockGouda.sol";
+import {MockERC721} from "./mocks/MockERC721.sol";
+import {MockMadMouse} from "./mocks/MockMadMouse.sol";
 
+import {IGouda, IMadMouse} from "../lib/interfaces.sol";
 import {ArrayUtils} from "./ArrayUtils.sol";
-import {Gouda} from "./Gouda.sol";
-
-import {MockERC721} from "../mocks/MockERC721.sol";
-import {MockMadMouse} from "../mocks/MockMadMouse.sol";
 
 contract TestDeployGachapon {
     using ArrayUtils for *;
@@ -30,7 +29,7 @@ contract TestDeployGachapon {
         genesis = genesis_;
         troupe = troupe_;
 
-        gouda = IGouda(address(new Gouda()));
+        gouda = IGouda(address(new MockGouda()));
         gachapon = new Gachapon(gouda, genesis, troupe);
         auctionHouse = new AuctionHouse(gouda, genesis, troupe);
         whitelistMarket = new WhitelistMarket(gouda, genesis, troupe);

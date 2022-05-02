@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Gouda is ERC20("Gouda", "GOUDA") {
+contract MockGouda is ERC20("Gouda", "GOUDA") {
     function mint(address user, uint256 amount) external {
         _mint(user, amount);
     }

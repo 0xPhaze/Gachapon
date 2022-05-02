@@ -50,6 +50,7 @@ error MaxEntriesReached();
 error ContractCallNotAllowed();
 error NotActive();
 error RequirementNotFulfilled();
+error InvalidTimestamp();
 
 contract WhitelistMarket is Ownable {
     event BurnForWhitelist(address indexed user, bytes32 indexed id);
@@ -76,18 +77,32 @@ contract WhitelistMarket is Ownable {
     function burnForWhitelist(
         uint256 start,
         uint256 end,
-        uint256 price,
-        uint256 maxSupply,
+        uint256 startPrice,
+        uint256 endPrice,
         uint256 maxEntries,
+        uint256 maxSupply,
         uint256 requirement,
         uint256 requirementData
     ) external noContract {
         unchecked {
-            bytes32 hash = getWhitelistHash(start, end, price, maxSupply, maxEntries, requirement);
+            bytes32 hash = getWhitelistHash(start, end, startPrice, endPrice, maxEntries, maxSupply, requirement);
 
+            uint256 price;
+            if (startPrice <= endPrice) {
+                // if no dutch-auction, make sure that we're in the valid timeframe
+                // dutch auction sits at resting price
+                if (block.timestamp < start || end < block.timestamp) revert NotActive();
+                price = startPrice;
+            } else {
+                if (block.timestamp < start) revert NotActive();
+                if (end < start) revert InvalidTimestamp();
+                // assumptions: endPrice < startPrice; timestamp >= start; start <= end
+                uint256 timestamp = block.timestamp > end ? end : block.timestamp;
+                // overflow unlikely
+                price = startPrice - ((startPrice - endPrice) * (timestamp - start)) / (end - start);
+            }
             if (++totalSupply[hash] > maxSupply) revert NoWhitelistRemaining();
             if (++numEntries[hash][msg.sender] > maxEntries) revert MaxEntriesReached();
-            if (block.timestamp < start || end < block.timestamp) revert NotActive();
             if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
                 revert RequirementNotFulfilled();
 
@@ -101,18 +116,20 @@ contract WhitelistMarket is Ownable {
     function getWhitelistHash(
         uint256 start,
         uint256 end,
-        uint256 price,
-        uint256 maxSupply,
+        uint256 startPrice,
+        uint256 endPrice,
         uint256 maxEntries,
+        uint256 maxSupply,
         uint256 requirement
     ) public pure returns (bytes32) {
-        return keccak256(abi.encode(start, end, price, maxSupply, maxEntries, requirement));
+        return keccak256(abi.encode(start, end, startPrice, endPrice, maxEntries, maxSupply, requirement));
     }
 
     // 1: genesis
     // 2: troupe
-    // 3: level >= 2
-    // 4: level == 3
+    // 3: genesis / troupe
+    // 4: level >= 2
+    // 5: level == 3
     function fulfillsRequirement(
         address user,
         uint256 requirement,

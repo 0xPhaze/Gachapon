@@ -43,6 +43,7 @@ pragma solidity ^0.8.12;
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM author: phaze MMM
 
 import {Strings} from "../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
+import {IERC20} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC20.sol";
 import {IERC721} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721.sol";
 import {IERC721Metadata} from "../lib/openzeppelin-contracts/contracts/interfaces/IERC721Metadata.sol";
 
@@ -85,7 +86,7 @@ contract Gachapon is Ownable {
         uint40 maxTicketSupply;
         uint40 ticketPrice; // in multiples of 1e18
         uint8 requirement;
-        uint16 refundRate;
+        uint16 refundRate; // set in range [0, 2^16 - 1] (0, 100%)
         bool cancelled;
         address tickets;
         uint40 randomSeed;
@@ -125,25 +126,26 @@ contract Gachapon is Ownable {
     /* ------------- External ------------- */
 
     function buyTicket(uint256 raffleId, uint256 requirementData) external noContract {
-        Raffle storage raffle = raffles[raffleId];
-        uint256 ticketSupply = raffle.ticketSupply;
-
-        if (raffle.cancelled || raffle.end < block.timestamp || block.timestamp < raffle.start)
-            revert RaffleNotActive();
-        if (ticketSupply == raffle.maxTicketSupply) revert TicketsMaxSupplyReached();
-
-        uint256 requirement = raffle.requirement;
-        if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
-            revert RequirementNotFulfilled();
-
         unchecked {
+            Raffle storage raffle = raffles[raffleId];
+            uint256 ticketSupply = raffle.ticketSupply;
+
+            if (ticketSupply == raffle.maxTicketSupply) revert TicketsMaxSupplyReached();
+            if (block.timestamp < raffle.start || raffle.end < block.timestamp || raffle.cancelled)
+                revert RaffleNotActive();
+
+            uint256 requirement = raffle.requirement;
+            if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
+                revert RequirementNotFulfilled();
+
+            // validates ownership
             gouda.burnFrom(msg.sender, uint256(raffle.ticketPrice) * 1e18);
+
+            uint256 ticketId = ++ticketSupply;
+            raffle.ticketSupply = uint40(ticketSupply);
+
+            Tickets(raffle.tickets).mint(msg.sender, ticketId);
         }
-
-        uint256 ticketId = ++ticketSupply;
-        raffle.ticketSupply = uint40(ticketSupply);
-
-        Tickets(raffle.tickets).mint(msg.sender, ticketId);
     }
 
     function claimPrize(uint256 raffleId, uint256 ticketId) external noContract {
@@ -162,6 +164,7 @@ contract Gachapon is Ownable {
         uint256 prizeId;
 
         // ticketId starts at 1
+        // ownerOf is checked, so underflow is no issue
         unchecked {
             (win, prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
         }
@@ -172,7 +175,7 @@ contract Gachapon is Ownable {
         claimedPrize[raffleId][ticketId] = true;
 
         IERC721 prizeNFT = IERC721(raffle.prizeNFT);
-        prizeNFT.transferFrom(address(this), msg.sender, raffle.prizeTokenIds[prizeId]);
+        prizeNFT.transferFrom(owner(), msg.sender, raffle.prizeTokenIds[prizeId]);
     }
 
     function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external noContract {
@@ -192,6 +195,7 @@ contract Gachapon is Ownable {
                 tickets.burnFrom(msg.sender, burnTicketIds[i]);
 
                 refundRate = raffle.refundRate;
+                // type(uint40).max * 1e18 * type(uint16).max < type(uint256).max
                 if (refundRate > 0) refund += (uint256(raffle.ticketPrice) * 1e18 * refundRate) >> 16;
             }
         }
@@ -316,15 +320,17 @@ contract Gachapon is Ownable {
         uint8 requirement
     ) external onlyOwner {
         unchecked {
-            for (uint256 i; i < prizeTokenIds.length; ++i)
-                IERC721(prizeNFT).transferFrom(msg.sender, address(this), prizeTokenIds[i]);
+            // don't transfer to contract to save gas
+            // need to make sure that contract has allowance to transfer NFTs of owner
+            // for (uint256 i; i < prizeTokenIds.length; ++i)
+            //     IERC721(prizeNFT).transferFrom(msg.sender, address(this), prizeTokenIds[i]);
 
             uint256 raffleId = ++numRaffles;
             Raffle storage raffle = raffles[raffleId];
 
+            if (ticketPrice >= 1e18) revert InvalidTicketPrice(); // safeguard, since ticketPrice is kept in multiples of 1e18
             if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
-            if (start < block.timestamp || end <= start || end - start > ONE_MONTH) revert InvalidTimestamps();
-            if (ticketPrice >= 1e18) revert InvalidTicketPrice();
+            if (ONE_MONTH < start - block.timestamp || ONE_MONTH < end - start) revert InvalidTimestamps(); // underflow desired
 
             address tickets = createTicketsClone(ticketsImplementation);
             ticketsToRaffleId[tickets] = raffleId;
@@ -344,6 +350,7 @@ contract Gachapon is Ownable {
     }
 
     function editRaffle(
+        uint256 raffleId,
         address prizeNFT,
         uint32[] calldata prizeTokenIds,
         uint40 start,
@@ -352,7 +359,23 @@ contract Gachapon is Ownable {
         uint16 refundRate,
         uint40 maxTicketSupply,
         uint8 requirement
-    ) external onlyOwner {}
+    ) external onlyOwner {
+        unchecked {
+            if (ticketPrice >= 1e18) revert InvalidTicketPrice();
+            if (block.timestamp + ONE_MONTH < start || ONE_MONTH < end - start) revert InvalidTimestamps();
+
+            Raffle storage raffle = raffles[raffleId];
+
+            raffle.prizeNFT = prizeNFT;
+            raffle.prizeTokenIds = prizeTokenIds;
+            raffle.start = start;
+            raffle.end = end;
+            raffle.ticketPrice = ticketPrice;
+            raffle.refundRate = refundRate;
+            raffle.maxTicketSupply = maxTicketSupply;
+            raffle.requirement = requirement;
+        }
+    }
 
     function rescueToys(IERC721 toy, uint256[] calldata toyIds) external onlyOwner {
         unchecked {
@@ -360,21 +383,8 @@ contract Gachapon is Ownable {
         }
     }
 
-    function cancelRaffle(uint256 raffleId) external onlyOwner {
-        unchecked {
-            Raffle storage raffle = raffles[raffleId];
-
-            uint256 numToys = raffle.prizeTokenIds.length;
-
-            if (raffle.cancelled) revert RaffleAlreadyCancelled();
-
-            IERC721 prizeNFT = IERC721(raffle.prizeNFT);
-            for (uint256 i; i < numToys; ++i) {
-                try prizeNFT.transferFrom(address(this), msg.sender, raffles[raffleId].prizeTokenIds[i]) {} catch {}
-            }
-
-            raffle.cancelled = true;
-        }
+    function rescueERC20(IERC20 token) external onlyOwner {
+        token.transfer(msg.sender, token.balanceOf(address(this)));
     }
 
     function initiateGrappler(uint256 raffleId) external onlyOwner {
