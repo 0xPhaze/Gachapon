@@ -80,17 +80,19 @@ contract Gachapon is Ownable {
     event BZZzzt();
 
     struct Raffle {
+        address prizeNFT;
         uint40 start;
         uint40 end;
-        uint40 ticketSupply;
-        uint40 maxTicketSupply;
-        uint40 ticketPrice; // in multiples of 1e18
+        uint16 ticketPrice; // in multiples of 1e18
+        // first slot
+        uint16 ticketSupply;
+        uint16 maxTicketSupply;
+        uint8 refundRate; // set in range [0, 2^8 - 1] (0, 100%)
         uint8 requirement;
-        uint16 refundRate; // set in range [0, 2^16 - 1] (0, 100%)
         bool cancelled;
-        address tickets;
         uint40 randomSeed;
-        address prizeNFT;
+        address tickets;
+        // second slot
         uint32[] prizeTokenIds;
     }
 
@@ -109,6 +111,10 @@ contract Gachapon is Ownable {
 
     uint256 constant ONE_MONTH = 3600 * 24 * 28;
 
+    // IGouda constant gouda = IGouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
+    // IMadMouse constant genesis = IMadMouse(0x3aD30c5e2985e960E89F4a28eFc91BA73e104b77);
+    // IMadMouse constant troupe = IMadMouse(0x74d9d90a7fc261FBe92eD47B606b6E0E00d75E70);
+
     IGouda immutable gouda;
     IMadMouse immutable genesis;
     IMadMouse immutable troupe;
@@ -125,7 +131,7 @@ contract Gachapon is Ownable {
 
     /* ------------- External ------------- */
 
-    function buyTicket(uint256 raffleId, uint256 requirementData) external noContract {
+    function buyTicket(uint256 raffleId, uint256 requirementData) external onlyEOA {
         unchecked {
             Raffle storage raffle = raffles[raffleId];
             uint256 ticketSupply = raffle.ticketSupply;
@@ -138,17 +144,17 @@ contract Gachapon is Ownable {
             if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
                 revert RequirementNotFulfilled();
 
-            // validates ownership
+            // verifies ownership
             gouda.burnFrom(msg.sender, uint256(raffle.ticketPrice) * 1e18);
 
             uint256 ticketId = ++ticketSupply;
-            raffle.ticketSupply = uint40(ticketSupply);
+            raffle.ticketSupply = uint16(ticketSupply);
 
             Tickets(raffle.tickets).mint(msg.sender, ticketId);
         }
     }
 
-    function claimPrize(uint256 raffleId, uint256 ticketId) external noContract {
+    function claimPrize(uint256 raffleId, uint256 ticketId) external onlyEOA {
         Raffle storage raffle = raffles[raffleId];
         Tickets tickets = Tickets(raffle.tickets);
 
@@ -158,27 +164,28 @@ contract Gachapon is Ownable {
         if (randomSeed == 0) revert RaffleUnrevealed();
 
         uint256 numPrizes = raffle.prizeTokenIds.length;
-        uint256 numEntrants = raffle.ticketSupply;
-
+        uint256 numEntries = raffle.ticketSupply;
         bool win;
         uint256 prizeId;
 
-        // ticketId starts at 1
-        // ownerOf is checked, so underflow is no issue
+        // ticketId starts at 1; ownerOf is checked, so underflow is no issue
         unchecked {
-            (win, prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntrants, randomSeed);
+            (win, prizeId) = Choice.indexOfSelectNOfM(ticketId - 1, numPrizes, numEntries, randomSeed);
         }
 
         if (tickets.ownerOf(ticketId) != msg.sender || !win) revert BetterLuckNextTime();
-        if (claimedPrize[raffleId][ticketId]) revert PrizeAlreadyClaimed();
 
-        claimedPrize[raffleId][ticketId] = true;
+        uint256 prizeTokenId = raffle.prizeTokenIds[prizeId];
+
+        // encode whether the user has claimed in with the tokenId by setting the first bit; saves a cold sload/sstore
+        if (prizeTokenId > 0x7fffffff) revert PrizeAlreadyClaimed();
+        raffle.prizeTokenIds[prizeId] = uint32(prizeTokenId) | 0x80000000;
 
         IERC721 prizeNFT = IERC721(raffle.prizeNFT);
-        prizeNFT.transferFrom(owner(), msg.sender, raffle.prizeTokenIds[prizeId]);
+        prizeNFT.transferFrom(owner(), msg.sender, prizeTokenId & 0x0fffffff);
     }
 
-    function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external noContract {
+    function burnTickets(uint256[] calldata burnRaffleIds, uint256[] calldata burnTicketIds) external onlyEOA {
         Raffle storage raffle;
 
         uint256 refund;
@@ -195,8 +202,8 @@ contract Gachapon is Ownable {
                 tickets.burnFrom(msg.sender, burnTicketIds[i]);
 
                 refundRate = raffle.refundRate;
-                // type(uint40).max * 1e18 * type(uint16).max < type(uint256).max
-                if (refundRate > 0) refund += (uint256(raffle.ticketPrice) * 1e18 * refundRate) >> 16;
+                // type(uint40).max * 1e18 * type(uint8).max < type(uint256).max
+                if (refundRate > 0) refund += (uint256(raffle.ticketPrice) * 1e18 * (refundRate + 1)) >> 8; // slight imprecission is ok
             }
         }
 
@@ -251,7 +258,7 @@ contract Gachapon is Ownable {
         address user,
         uint256 requirement,
         uint256 data
-    ) public returns (bool) {
+    ) public view returns (bool) {
         unchecked {
             if (requirement == 1 && genesis.numOwned(user) > 0) return true;
             else if (requirement == 2 && troupe.numOwned(user) > 0) return true;
@@ -314,9 +321,9 @@ contract Gachapon is Ownable {
         uint32[] calldata prizeTokenIds,
         uint40 start,
         uint40 end,
-        uint40 ticketPrice,
-        uint16 refundRate,
-        uint40 maxTicketSupply,
+        uint16 ticketPrice,
+        uint8 refundRate,
+        uint16 maxTicketSupply,
         uint8 requirement
     ) external onlyOwner {
         unchecked {
@@ -328,7 +335,7 @@ contract Gachapon is Ownable {
             uint256 raffleId = ++numRaffles;
             Raffle storage raffle = raffles[raffleId];
 
-            if (ticketPrice >= 1e18) revert InvalidTicketPrice(); // safeguard, since ticketPrice is kept in multiples of 1e18
+            if (ticketPrice >= 1e18) revert InvalidTicketPrice(); // sanity check, since ticketPrice is kept in multiples of 1e18
             if (ticketsImplementation == address(0)) revert TicketsImplementationUnset();
             if (ONE_MONTH < start - block.timestamp || ONE_MONTH < end - start) revert InvalidTimestamps(); // underflow desired
 
@@ -349,16 +356,22 @@ contract Gachapon is Ownable {
         }
     }
 
+    // should normally be ignored
+    function incrementRaffleId(uint256 num) external onlyOwner {
+        numRaffles += num;
+    }
+
     function editRaffle(
         uint256 raffleId,
         address prizeNFT,
         uint32[] calldata prizeTokenIds,
         uint40 start,
         uint40 end,
-        uint40 ticketPrice,
-        uint16 refundRate,
-        uint40 maxTicketSupply,
-        uint8 requirement
+        uint16 ticketPrice,
+        uint8 refundRate,
+        uint16 maxTicketSupply,
+        uint8 requirement,
+        bool cancelled
     ) external onlyOwner {
         unchecked {
             if (ticketPrice >= 1e18) revert InvalidTicketPrice();
@@ -374,6 +387,7 @@ contract Gachapon is Ownable {
             raffle.refundRate = refundRate;
             raffle.maxTicketSupply = maxTicketSupply;
             raffle.requirement = requirement;
+            raffle.cancelled = cancelled;
         }
     }
 
@@ -387,7 +401,7 @@ contract Gachapon is Ownable {
         token.transfer(msg.sender, token.balanceOf(address(this)));
     }
 
-    function initiateGrappler(uint256 raffleId) external onlyOwner {
+    function triggerClaw(uint256 raffleId) external onlyOwner {
         Raffle storage raffle = raffles[raffleId];
 
         if (raffle.cancelled) revert RaffleNotActive();
@@ -430,7 +444,7 @@ contract Gachapon is Ownable {
 
     /* ------------- Modifier ------------- */
 
-    modifier noContract() {
+    modifier onlyEOA() {
         if (msg.sender != tx.origin) revert ContractCallNotAllowed();
         _;
     }

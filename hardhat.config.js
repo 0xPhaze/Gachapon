@@ -12,7 +12,7 @@ const { TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS } = require("hardhat/builtin-task
 subtask(TASK_COMPILE_SOLIDITY_GET_SOURCE_PATHS).setAction(async (_, __, runSuper) => {
   const paths = await runSuper();
 
-  return paths.filter((p) => !p.endsWith(".t.sol"));
+  return paths.filter((p) => !p.endsWith(".t.sol") && p.split("/").at(-2) !== "test");
 });
 
 const networks = ["mainnet", "rinkeby", "kovan", "polygon", "mumbai", "avalanche", "fuji", "bsc", "bsctest"];

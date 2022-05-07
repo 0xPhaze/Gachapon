@@ -2,6 +2,13 @@
 pragma solidity ^0.8.12;
 
 library ArrayUtils {
+    /* ------------- address ------------- */
+
+    function includes(address[] memory arr, address address_) internal pure returns (bool) {
+        for (uint256 i; i < arr.length; ++i) if (arr[i] == address_) return true;
+        return false;
+    }
+
     /* ------------- uint8 ------------- */
 
     function toMemory32(uint8[1] memory arr) internal pure returns (uint32[] memory out) {

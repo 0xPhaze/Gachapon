@@ -5,15 +5,27 @@ async function main() {
   console.log(`genesis: "${genesis.address}",`);
   const troupe = await (await ethers.getContractFactory("MockMadMouse")).deploy();
   console.log(`troupe: "${troupe.address}",`);
-  const deploy = await (await ethers.getContractFactory("TestDeployGachapon")).deploy(genesis.address, troupe.address);
+  // const deploy = await (await ethers.getContractFactory("TestDeployGachapon")).deploy(genesis.address, troupe.address);
+
+  // const gachapon = await (await ethers.getContractFactory("G")).deploy();
 
   console.log(`gouda: "${await deploy.gouda()}",`);
   console.log(`gachapon: "${await deploy.gachapon()}",`);
   console.log(`auctionHouse: "${await deploy.auctionHouse()}",`);
   console.log(`whitelistMarket: "${await deploy.whitelistMarket()}",`);
 
-  await deploy.initRaffles();
-  await deploy.initAuctions();
+  // const t = await (
+  //   await ethers.getContractFactory("SoulboundTickets")
+  // ).deploy("0x1cdbc6a0de7f74084156c6d02ff32e7e7d442465");
+  // console.log(t.address);
+
+  for (let i = 0; i < 10; i++)
+    console.log(await ethers.provider.getStorageAt("0x10D3E8220C6c64ecA8e282fd03494f61B3F3896e", i));
+
+  // console.log(`gouda: "${await deploy.gouda()}",`);
+
+  // await deploy.initRaffles();
+  // await deploy.initAuctions();
 
   // const Gachapon = await ethers.getContractFactory("Gachapon");
   // const gachapon = await Gachapon.deploy();

@@ -42,6 +42,7 @@ pragma solidity ^0.8.12;
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM.`MMM MMM MMMMM`.MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM author: phaze MMM
 
+import {Choice} from "./lib/Choice.sol";
 import {Ownable} from "./lib/Ownable.sol";
 import {IGouda, IMadMouse} from "./lib/interfaces.sol";
 
@@ -50,13 +51,25 @@ error MaxEntriesReached();
 error ContractCallNotAllowed();
 error NotActive();
 error RequirementNotFulfilled();
-error InvalidTimestamp();
+error RandomSeedAlreadyChosen();
 
-contract WhitelistMarket is Ownable {
-    event BurnForWhitelist(address indexed user, bytes32 indexed id);
+contract Marketplace is Ownable {
+    event BurnForItem(address indexed user, bytes32 indexed id);
 
-    mapping(bytes32 => uint256) public totalSupply;
+    struct MarketItem {
+        uint32 totalSupply;
+        uint224 restingPrice;
+    }
+
+    mapping(bytes32 => MarketItem) public marketItems;
     mapping(bytes32 => mapping(address => uint256)) public numEntries;
+
+    mapping(bytes32 => mapping(uint256 => address)) public raffleEntries;
+    mapping(bytes32 => uint256) public raffleRandomSeeds;
+
+    // IGouda constant gouda = IGouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
+    // IMadMouse constant genesis = IMadMouse(0x3aD30c5e2985e960E89F4a28eFc91BA73e104b77);
+    // IMadMouse constant troupe = IMadMouse(0x74d9d90a7fc261FBe92eD47B606b6E0E00d75E70);
 
     IGouda immutable gouda;
     IMadMouse immutable genesis;
@@ -74,7 +87,34 @@ contract WhitelistMarket is Ownable {
 
     /* ------------- External ------------- */
 
-    function burnForWhitelist(
+    function purchaseMarketItem(
+        uint256 start,
+        uint256 end,
+        uint256 price,
+        uint256 maxEntries,
+        uint256 maxSupply,
+        uint256 requirement,
+        uint256 requirementData
+    ) external onlyEOA {
+        unchecked {
+            bytes32 hash = keccak256(abi.encode(start, end, price, maxEntries, maxSupply, requirement));
+
+            if (block.timestamp < start || end < block.timestamp) revert NotActive();
+
+            MarketItem storage marketItem = marketItems[hash];
+            uint256 totalSupply = ++marketItem.totalSupply;
+
+            if (totalSupply > maxSupply) revert NoWhitelistRemaining();
+            if (++numEntries[hash][msg.sender] > maxEntries) revert MaxEntriesReached();
+            if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
+                revert RequirementNotFulfilled();
+
+            gouda.burnFrom(msg.sender, price);
+            emit BurnForItem(msg.sender, hash);
+        }
+    }
+
+    function purchaseMarketItemDutchAuction(
         uint256 start,
         uint256 end,
         uint256 startPrice,
@@ -83,47 +123,109 @@ contract WhitelistMarket is Ownable {
         uint256 maxSupply,
         uint256 requirement,
         uint256 requirementData
-    ) external noContract {
+    ) external onlyEOA {
         unchecked {
-            bytes32 hash = getWhitelistHash(start, end, startPrice, endPrice, maxEntries, maxSupply, requirement);
+            bytes32 hash = keccak256(abi.encode(start, end, startPrice, endPrice, maxEntries, maxSupply, requirement));
 
             uint256 price;
-            if (startPrice <= endPrice) {
-                // if no dutch-auction, make sure that we're in the valid timeframe
-                // dutch auction sits at resting price
-                if (block.timestamp < start || end < block.timestamp) revert NotActive();
-                price = startPrice;
-            } else {
-                if (block.timestamp < start) revert NotActive();
-                if (end < start) revert InvalidTimestamp();
-                // assumptions: endPrice < startPrice; timestamp >= start; start <= end
-                uint256 timestamp = block.timestamp > end ? end : block.timestamp;
-                // overflow unlikely
-                price = startPrice - ((startPrice - endPrice) * (timestamp - start)) / (end - start);
-            }
-            if (++totalSupply[hash] > maxSupply) revert NoWhitelistRemaining();
+            if (block.timestamp < start) revert NotActive();
+
+            // assumptions: endPrice < startPrice; timestamp >= start; start <= end
+            uint256 timestamp = block.timestamp > end ? end : block.timestamp;
+            price = startPrice - ((startPrice - endPrice) * (timestamp - start)) / (end - start); // overflow unlikely
+
+            MarketItem storage marketItem = marketItems[hash];
+
+            if (++marketItem.totalSupply > maxSupply) revert NoWhitelistRemaining();
             if (++numEntries[hash][msg.sender] > maxEntries) revert MaxEntriesReached();
             if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
                 revert RequirementNotFulfilled();
 
+            marketItem.restingPrice = uint224(price);
+
             gouda.burnFrom(msg.sender, price);
-            emit BurnForWhitelist(msg.sender, hash);
+            emit BurnForItem(msg.sender, hash);
+        }
+    }
+
+    function purchaseMarketItemRaffle(
+        uint256 start,
+        uint256 end,
+        uint256 price,
+        uint256 maxEntries,
+        uint256 maxSupply,
+        uint256 numPrizes,
+        uint256 requirement,
+        uint256 requirementData
+    ) external onlyEOA {
+        unchecked {
+            bytes32 hash = keccak256(abi.encode(start, end, price, maxEntries, maxSupply, numPrizes, requirement));
+
+            if (block.timestamp < start || end < block.timestamp) revert NotActive();
+
+            MarketItem storage marketItem = marketItems[hash];
+
+            uint256 totalSupply = ++marketItem.totalSupply;
+
+            if (totalSupply > maxSupply) revert NoWhitelistRemaining();
+            if (++numEntries[hash][msg.sender] > maxEntries) revert MaxEntriesReached();
+            if (requirement != 0 && !fulfillsRequirement(msg.sender, requirement, requirementData))
+                revert RequirementNotFulfilled();
+
+            raffleEntries[hash][totalSupply] = msg.sender;
+
+            gouda.burnFrom(msg.sender, price);
+            emit BurnForItem(msg.sender, hash);
         }
     }
 
     /* ------------- View ------------- */
 
-    function getWhitelistHash(
+    function getRaffleEntries(bytes32 hash) external view returns (address[] memory) {
+        uint256 totalSupply = marketItems[hash].totalSupply;
+
+        address[] memory entrants = new address[](totalSupply);
+
+        for (uint256 i; i < totalSupply; ++i) entrants[i] = raffleEntries[hash][i + 1];
+
+        return entrants;
+    }
+
+    function getRaffleWinners(bytes32 hash, uint256 numPrizes) public view returns (address[] memory winners) {
+        uint256 randomSeed = raffleRandomSeeds[hash];
+        if (randomSeed == 0) return winners;
+
+        uint256 totalSupply = marketItems[hash].totalSupply;
+
+        uint256[] memory winnerIds = Choice.selectNOfM(numPrizes, totalSupply, randomSeed);
+        uint256 numIds = winnerIds.length;
+
+        winners = new address[](numIds);
+
+        for (uint256 i; i < numIds; ++i) winners[i] = raffleEntries[hash][i + 1];
+    }
+
+    /* ------------- Owner ------------- */
+
+    function revealRaffle(
         uint256 start,
         uint256 end,
-        uint256 startPrice,
-        uint256 endPrice,
+        uint256 price,
         uint256 maxEntries,
         uint256 maxSupply,
+        uint256 numPrizes,
         uint256 requirement
-    ) public pure returns (bytes32) {
-        return keccak256(abi.encode(start, end, startPrice, endPrice, maxEntries, maxSupply, requirement));
+    ) external onlyOwner {
+        bytes32 hash = keccak256(abi.encode(start, end, price, maxEntries, maxSupply, numPrizes, requirement));
+
+        if (block.timestamp < end) revert NotActive();
+
+        if (raffleRandomSeeds[hash] != 0) revert RandomSeedAlreadyChosen();
+
+        raffleRandomSeeds[hash] = uint256(blockhash(block.number - 1));
     }
+
+    /* ------------- View ------------- */
 
     // 1: genesis
     // 2: troupe
@@ -134,7 +236,7 @@ contract WhitelistMarket is Ownable {
         address user,
         uint256 requirement,
         uint256 data
-    ) public returns (bool) {
+    ) public view returns (bool) {
         unchecked {
             if (requirement == 1 && genesis.numOwned(user) > 0) return true;
             else if (requirement == 2 && troupe.numOwned(user) > 0) return true;
@@ -166,7 +268,7 @@ contract WhitelistMarket is Ownable {
 
     /* ------------- Modifier ------------- */
 
-    modifier noContract() {
+    modifier onlyEOA() {
         if (msg.sender != tx.origin) revert ContractCallNotAllowed();
         _;
     }

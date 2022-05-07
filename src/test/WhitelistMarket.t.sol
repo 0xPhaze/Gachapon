@@ -56,8 +56,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
             abi.encode(
                 block.timestamp, // start
                 block.timestamp + 500, // end
-                100 ether, // startPrice
-                100 ether, // endPrice
+                100 ether, // price
                 2, // maxEntries
                 10, // maxSupply
                 0 // requirement
@@ -71,8 +70,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             2, // maxEntries
             10, // maxSupply
             0, // requirement
@@ -89,8 +87,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             2, // maxEntries
             10, // maxSupply
             0, // requirement
@@ -100,8 +97,6 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         assertEq(gouda.balanceOf(alice), 300 ether);
     }
 
-    /* ------------- Normal Auction ------------- */
-
     function test_burnForWhitelist_fail_NoWhitelistRemaining() public {
         gouda.mint(alice, 500 ether);
         gouda.mint(bob, 500 ether);
@@ -110,8 +105,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             1, // maxEntries
             1, // maxSupply
             0, // requirement
@@ -123,8 +117,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             1, // maxEntries
             1, // maxSupply
             0, // requirement
@@ -139,8 +132,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             1, // maxEntries
             2, // maxSupply
             0, // requirement
@@ -152,8 +144,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             1, // maxEntries
             2, // maxSupply
             0, // requirement
@@ -169,8 +160,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp + 100, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             1, // maxEntries
             1, // maxSupply
             0, // requirement
@@ -183,8 +173,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp + 100, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             1, // maxEntries
             1, // maxSupply
             0, // requirement
@@ -192,17 +181,33 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         );
     }
 
-    /* ------------- Dutch Auction ------------- */
+    /* ------------- burnForWhitelistDutchAuction() ------------- */
 
-    function test_burnForWhitelist_DA() public {
+    function test_burnForWhitelistDutchAuction() public {
         gouda.mint(alice, 1000 ether);
 
         uint256 balance;
         balance = gouda.balanceOf(alice);
 
+        bytes32 hash = keccak256(
+            abi.encode(
+                block.timestamp, // start
+                block.timestamp + 500, // end
+                100 ether, // startPrice
+                100 ether, // endPrice
+                2, // maxEntries
+                10, // maxSupply
+                0 // requirement
+            )
+        );
+
         // start price
         vm.prank(alice, alice);
-        market.burnForWhitelist(
+
+        vm.expectEmit(true, false, false, false);
+        emit BurnForWhitelist(alice, hash);
+
+        market.burnForWhitelistDutchAuction(
             block.timestamp, // start
             block.timestamp + 100, // end
             200 ether, // startPrice
@@ -220,7 +225,11 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         // interpolated price
         vm.warp(23);
         vm.prank(alice, alice);
-        market.burnForWhitelist(
+
+        vm.expectEmit(true, false, false, false);
+        emit BurnForWhitelist(alice, hash);
+
+        market.burnForWhitelistDutchAuction(
             0, // start
             100, // end
             200 ether, // startPrice
@@ -238,7 +247,11 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         // end price
         vm.warp(500);
         vm.prank(alice, alice);
-        market.burnForWhitelist(
+
+        vm.expectEmit(true, false, false, false);
+        emit BurnForWhitelist(alice, hash);
+
+        market.burnForWhitelistDutchAuction(
             0, // start
             100, // end
             200 ether, // startPrice
@@ -252,12 +265,12 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         assertEq(100 ether, balance - gouda.balanceOf(alice));
     }
 
-    function test_burnForWhitelist_fail_NotActive_DA() public {
+    function test_burnForWhitelistDutchAuction_fail_NotActive() public {
         gouda.mint(alice, 500 ether);
 
         vm.expectRevert(NotActive.selector);
         vm.prank(alice, alice);
-        market.burnForWhitelist(
+        market.burnForWhitelistDutchAuction(
             block.timestamp + 100, // start
             block.timestamp + 500, // end
             200 ether, // startPrice
@@ -269,24 +282,24 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         );
     }
 
-    function test_burnForWhitelist_fail_InvalidTimestamp() public {
-        gouda.mint(alice, 500 ether);
+    // function test_burnForWhitelistDutchAuction_fail_InvalidTimestamp() public {
+    //     gouda.mint(alice, 500 ether);
 
-        vm.warp(600);
+    //     vm.warp(600);
 
-        vm.expectRevert(InvalidTimestamp.selector);
-        vm.prank(alice, alice);
-        market.burnForWhitelist(
-            block.timestamp + 500, // start
-            block.timestamp + 100, // end
-            200 ether, // startPrice
-            100 ether, // endPrice
-            1, // maxEntries
-            1, // maxSupply
-            0, // requirement
-            0 // requirementData
-        );
-    }
+    //     vm.expectRevert(InvalidTimestamp.selector);
+    //     vm.prank(alice, alice);
+    //     market.burnForWhitelistDutchAuction(
+    //         block.timestamp + 500, // start
+    //         block.timestamp + 100, // end
+    //         200 ether, // startPrice
+    //         100 ether, // endPrice
+    //         1, // maxEntries
+    //         1, // maxSupply
+    //         0, // requirement
+    //         0 // requirementData
+    //     );
+    // }
 
     /* ------------- Requirements ------------- */
 
@@ -299,8 +312,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
             market.burnForWhitelist(
                 block.timestamp, // start
                 block.timestamp + 500, // end
-                100 ether, // startPrice
-                100 ether, // endPrice
+                100 ether, // price
                 1, // maxEntries
                 1, // maxSupply
                 1, // requirement
@@ -317,8 +329,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             1, // requirement
@@ -334,8 +345,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             2, // requirement
@@ -355,8 +365,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             3, // requirement
@@ -367,8 +376,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             3, // requirement
@@ -381,8 +389,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             3, // requirement
@@ -393,8 +400,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             3, // requirement
@@ -412,8 +418,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -428,8 +433,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -447,8 +451,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -463,8 +466,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -482,8 +484,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -495,8 +496,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -514,8 +514,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             5, // requirement
@@ -527,8 +526,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             5, // requirement
@@ -546,8 +544,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement
@@ -559,8 +556,7 @@ contract TestWhitelistMarket is DSTestPlus, stdCheats {
         market.burnForWhitelist(
             block.timestamp, // start
             block.timestamp + 500, // end
-            100 ether, // startPrice
-            100 ether, // endPrice
+            100 ether, // price
             10, // maxEntries
             10, // maxSupply
             4, // requirement

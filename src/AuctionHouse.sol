@@ -61,6 +61,7 @@ error NoBidPlaced();
 error CannotWithdrawWinningBid();
 error IncorrectWinner();
 error RequirementNotFulfilled();
+error InvalidAuctionId();
 
 error QualifierMaxEntrantsReached();
 error QualifierInactive();
@@ -96,6 +97,10 @@ contract AuctionHouse is Ownable {
     uint256 constant ONE_MONTH = 3600 * 24 * 7 * 4;
     uint256 constant AUCTION_EXTEND_DURATION = 5 * 60;
 
+    // IGouda constant gouda = IGouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
+    // IMadMouse constant genesis = IMadMouse(0x3aD30c5e2985e960E89F4a28eFc91BA73e104b77);
+    // IMadMouse constant troupe = IMadMouse(0x74d9d90a7fc261FBe92eD47B606b6E0E00d75E70);
+
     IGouda immutable gouda;
     IMadMouse immutable genesis;
     IMadMouse immutable troupe;
@@ -116,7 +121,7 @@ contract AuctionHouse is Ownable {
         uint256 auctionId,
         uint40 bid,
         uint256 requirementData
-    ) external noContract {
+    ) external onlyEOA {
         Auction storage auction = auctions[auctionId];
 
         if (bid <= auction.currentBid) revert BidTooLow();
@@ -171,7 +176,7 @@ contract AuctionHouse is Ownable {
         address user,
         uint256 requirement,
         uint256 data
-    ) public returns (bool) {
+    ) public view returns (bool) {
         unchecked {
             if (requirement == 1 && genesis.numOwned(user) > 0) return true;
             else if (requirement == 2 && troupe.numOwned(user) > 0) return true;
@@ -201,15 +206,15 @@ contract AuctionHouse is Ownable {
         }
     }
 
-    function claimPrize(uint256 auctionId) external noContract {
+    function claimPrize(uint256 auctionId) external onlyEOA {
         resolveBid(auctionId);
     }
 
-    function reclaimGouda(uint256 auctionId) external noContract {
+    function reclaimGouda(uint256 auctionId) external onlyEOA {
         resolveBid(auctionId);
     }
 
-    function enterQualifier(uint256 auctionId, uint256 requirementData) external noContract {
+    function enterQualifier(uint256 auctionId, uint256 requirementData) external onlyEOA {
         Auction storage auction = auctions[auctionId];
         unchecked {
             if (++auction.qualifierNumEntrants > auction.qualifierMaxEntrants) revert QualifierMaxEntrantsReached();
@@ -263,7 +268,7 @@ contract AuctionHouse is Ownable {
             if (callerBid == 0) revert NoBidPlaced();
 
             if (auction.currentBid == callerBid && !cancelled) {
-                IERC721(auction.prizeNFT).transferFrom(address(this), msg.sender, auction.prizeTokenId);
+                IERC721(auction.prizeNFT).transferFrom(owner(), msg.sender, auction.prizeTokenId);
             } else {
                 // callerBid >= 1
                 if (qualifierDuration != 0) callerBid -= 1; // keep the qualifier downpayment
@@ -288,11 +293,12 @@ contract AuctionHouse is Ownable {
         uint256 auctionId;
         unchecked {
             auctionId = ++numAuctions;
+
+            if (ONE_MONTH < start - block.timestamp || duration > ONE_MONTH || qualifierDuration > ONE_MONTH)
+                revert InvalidTimestamp();
         }
 
-        if (start < block.timestamp || duration > ONE_MONTH || qualifierDuration > ONE_MONTH) revert InvalidTimestamp();
-
-        IERC721(nft).transferFrom(msg.sender, address(this), tokenId);
+        // IERC721(nft).transferFrom(msg.sender, address(this), tokenId);
 
         Auction storage auction = auctions[auctionId];
 
@@ -308,11 +314,38 @@ contract AuctionHouse is Ownable {
         auction.prizeTokenId = tokenId;
     }
 
-    function cancelAuction(uint256 auctionId) external onlyOwner {
-        Auction storage auction = auctions[auctionId];
-        auction.cancelled = true;
+    function editAuction(
+        uint256 auctionId,
+        address nft,
+        uint40 tokenId,
+        uint16 qualifierMaxEntrants,
+        uint40 qualifierDuration,
+        uint16 qualifierChance,
+        uint8 requirement,
+        uint40 start,
+        uint40 duration,
+        bool cancelled
+    ) external onlyOwner {
+        unchecked {
+            if (block.timestamp + ONE_MONTH < start || duration > ONE_MONTH || qualifierDuration > ONE_MONTH)
+                revert InvalidTimestamp();
+        }
+        if (auctionId > numAuctions) revert InvalidAuctionId();
 
-        IERC721(auction.prizeNFT).transferFrom(address(this), msg.sender, auction.prizeTokenId);
+        Auction storage auction = auctions[auctionId];
+
+        auction.qualifierMaxEntrants = qualifierMaxEntrants;
+        auction.qualifierDuration = qualifierDuration;
+        auction.qualifierChance = qualifierChance;
+
+        auction.requirement = requirement;
+        auction.start = start;
+        auction.duration = duration;
+
+        auction.prizeNFT = nft;
+        auction.prizeTokenId = tokenId;
+
+        auction.cancelled = cancelled;
     }
 
     function revealQualifier(uint256 auctionId) external onlyOwner {
@@ -335,9 +368,13 @@ contract AuctionHouse is Ownable {
         }
     }
 
+    function rescueERC20(IERC20 token) external onlyOwner {
+        token.transfer(msg.sender, token.balanceOf(address(this)));
+    }
+
     /* ------------- Modifier ------------- */
 
-    modifier noContract() {
+    modifier onlyEOA() {
         if (msg.sender != tx.origin) revert ContractCallNotAllowed();
         _;
     }

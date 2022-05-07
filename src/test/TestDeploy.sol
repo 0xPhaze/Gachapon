@@ -55,7 +55,7 @@ contract TestDeployGachapon {
             uint40(block.timestamp),
             uint40(block.timestamp + 10),
             7,
-            uint16((uint256(type(uint16).max) * 66) / 100),
+            uint8((uint256(255) * 66) / 100),
             30,
             0
         );
@@ -71,7 +71,7 @@ contract TestDeployGachapon {
             uint40(block.timestamp),
             uint40(block.timestamp + 1400),
             7,
-            uint16((uint256(type(uint16).max) * 80) / 100),
+            uint8((uint256(255) * 80) / 100),
             30,
             0
         );
@@ -87,7 +87,7 @@ contract TestDeployGachapon {
             uint40(block.timestamp + 500),
             uint40(block.timestamp + 2300),
             10,
-            uint16((uint256(type(uint16).max) * 90) / 100),
+            uint8((uint256(255) * 90) / 100),
             10,
             0
         );
@@ -103,7 +103,7 @@ contract TestDeployGachapon {
             uint40(block.timestamp),
             uint40(block.timestamp + 1900),
             8,
-            uint16((uint256(type(uint16).max) * 90) / 100),
+            uint8((uint256(255) * 90) / 100),
             2,
             0
         );
@@ -119,7 +119,7 @@ contract TestDeployGachapon {
             uint40(block.timestamp + 1000),
             uint40(block.timestamp + 4000),
             20,
-            uint16((uint256(type(uint16).max) * 72) / 100),
+            uint8((uint256(255) * 72) / 100),
             30,
             0
         );
@@ -135,7 +135,7 @@ contract TestDeployGachapon {
             uint40(block.timestamp + 360000),
             uint40(block.timestamp + 400000),
             13,
-            uint16((uint256(type(uint16).max) * 54) / 100),
+            uint8((uint256(255) * 54) / 100),
             100,
             0
         );
@@ -151,7 +151,7 @@ contract TestDeployGachapon {
         //     uint40(block.timestamp + 360000),
         //     uint40(block.timestamp + 400000),
         //     13,
-        //     uint16((uint256(type(uint16).max) * 54) / 100),
+        //     uint8((uint256(255) * 54) / 100),
         //     100,
         //     0
         // );
@@ -167,7 +167,7 @@ contract TestDeployGachapon {
         //     uint40(block.timestamp + 360000),
         //     uint40(block.timestamp + 400000),
         //     13,
-        //     uint16((uint256(type(uint16).max) * 54) / 100),
+        //     uint8((uint256(255) * 54) / 100),
         //     100,
         //     0
         // );
@@ -183,7 +183,7 @@ contract TestDeployGachapon {
         //     uint40(block.timestamp + 360000),
         //     uint40(block.timestamp + 400000),
         //     13,
-        //     uint16((uint256(type(uint16).max) * 54) / 100),
+        ///    uint8((uint256(255) * 54) / 100),
         //     100,
         //     0
         // );
@@ -208,7 +208,7 @@ contract TestDeployGachapon {
             uint40(id),
             5,
             500,
-            uint16((uint256(type(uint16).max) * 9) / 10),
+            uint8((uint256(255) * 9) / 10),
             0,
             uint40(block.timestamp),
             1900
@@ -231,7 +231,7 @@ contract TestDeployGachapon {
             uint40(id),
             10,
             300,
-            uint16((uint256(type(uint16).max) * 4) / 5),
+            uint8((uint256(255) * 4) / 5),
             0,
             uint40(block.timestamp + 700),
             2000
@@ -247,7 +247,7 @@ contract TestDeployGachapon {
             uint40(id),
             2,
             500,
-            uint16((uint256(type(uint16).max) * 2) / 3),
+            uint8((uint256(255) * 2) / 3),
             3,
             uint40(block.timestamp + 600),
             2000
@@ -263,7 +263,7 @@ contract TestDeployGachapon {
             uint40(id),
             2,
             500,
-            uint16((uint256(type(uint16).max) * 2) / 3),
+            uint8((uint256(255) * 2) / 3),
             3,
             uint40(block.timestamp + 600),
             2000
@@ -279,7 +279,7 @@ contract TestDeployGachapon {
         //     uint40(id),
         //     2,
         //     500,
-        //     uint16((uint256(type(uint16).max) * 2) / 3),
+        //     uint8((uint256(255) * 2) / 3),
         //     3,
         //     uint40(block.timestamp + 600),
         //     2000
@@ -295,7 +295,7 @@ contract TestDeployGachapon {
         //     uint40(id),
         //     2,
         //     500,
-        //     uint16((uint256(type(uint16).max) * 2) / 3),
+        //     uint8((uint256(255) * 2) / 3),
         //     3,
         //     uint40(block.timestamp + 600),
         //     2000
@@ -311,7 +311,7 @@ contract TestDeployGachapon {
         //     uint40(id),
         //     2,
         //     500,
-        //     uint16((uint256(type(uint16).max) * 2) / 3),
+        //     uint8((uint256(255) * 2) / 3),
         //     3,
         //     uint40(block.timestamp + 600),
         //     2000
@@ -327,7 +327,7 @@ contract TestDeployGachapon {
         //     uint40(id),
         //     2,
         //     500,
-        //     uint16((uint256(type(uint16).max) * 2) / 3),
+        //     uint8((uint256(255) * 2) / 3),
         //     3,
         //     uint40(block.timestamp + 600),
         //     2000
