@@ -11,17 +11,26 @@ This repo will move completely to foundry once `forge verify-contracts` works.
 
 ```ml
 src
+├── AuctionHouse.sol - "Auction Contract"
 ├── Gachapon.sol - "Raffling system"
-├── Tickets - "ERC721 tickets that can be bought to enter a raffle"
-├── WhitelistMarket.sol - "Will be removed"
+├── Marketplace.sol - "Marketplace to allow purchases of limited off-chain items"
+├── SoulboundTickets.sol - "ERC721 tickets that can be bought to enter a raffle; Soulbound"
+├── Tickets.sol - "ERC721 tickets that can be bought to enter a raffle"
 ├── lib
 │   ├── Choice.sol - "Library for returning an array of winners"
-│   ├── Gouda.sol
 │   ├── Ownable.sol
-│   ├── VRFSubscriptionManager.sol - "Wrapper for chainlinks VRFv2"
 │   └── interfaces.sol
 └── test
-    ├── Choice.t.sol
+    ├── ArrayUtils.sol
     ├── Gachapon.t.sol
-    └── WhitelistMarket.t.sol
+    ├── TestDeploy.sol
+    ├── WhitelistMarket.t.sol
+    └── mocks
 ```
+
+These contracts can be tried out at the [Mad Mouse Circus Slot-Machine](https://slot-machine.madmousecircus.io/).
+Contracts:
+
+- [Gachapon](https://etherscan.io/address/0x1cdbc6a0de7f74084156c6d02ff32e7e7d442465#code)
+- [AuctionHouse](https://etherscan.io/address/0x6b805c98b5623b8100deb1d4a218ed1864e03836#code)
+- [Marketplace](https://etherscan.io/address/0x6b363d51016e65feeb18b66d05f82e5d9715b0e8#code)
