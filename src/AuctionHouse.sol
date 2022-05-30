@@ -358,7 +358,9 @@ contract AuctionHouse is Ownable {
             if (block.timestamp < auction.start + qualifierDuration) revert QualifierRevealInvalidTimeFrame();
             if (auction.qualifierRandomSeed != 0) revert QualifierRandomSeedSet();
 
-            auction.qualifierRandomSeed = uint16(uint256(blockhash(block.number - 1)));
+            auction.qualifierRandomSeed = uint16(
+                uint256(keccak256(abi.encode(blockhash(block.number - 1), auctionId)))
+            );
         }
     }
 

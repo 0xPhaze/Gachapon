@@ -411,7 +411,7 @@ contract Gachapon is Ownable {
         emit GrappleGrapple();
         emit BZZzzt();
 
-        raffle.randomSeed = uint40(uint256(blockhash(block.number - 1)));
+        raffle.randomSeed = uint40(uint256(keccak256(abi.encode(blockhash(block.number - 1), raffleId))));
     }
 
     function setTicketsImplementation(address ticketsImplementation_) external onlyOwner {

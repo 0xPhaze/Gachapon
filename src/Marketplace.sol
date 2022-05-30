@@ -222,7 +222,7 @@ contract Marketplace is Ownable {
 
         if (raffleRandomSeeds[hash] != 0) revert RandomSeedAlreadyChosen();
 
-        raffleRandomSeeds[hash] = uint256(blockhash(block.number - 1));
+        raffleRandomSeeds[hash] = uint256(keccak256(abi.encode(blockhash(block.number - 1), hash)));
     }
 
     /* ------------- View ------------- */
