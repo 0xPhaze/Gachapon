@@ -67,23 +67,9 @@ contract Marketplace is Ownable {
     mapping(bytes32 => mapping(uint256 => address)) public raffleEntries;
     mapping(bytes32 => uint256) public raffleRandomSeeds;
 
-    // IGouda constant gouda = IGouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
-    // IMadMouse constant genesis = IMadMouse(0x3aD30c5e2985e960E89F4a28eFc91BA73e104b77);
-    // IMadMouse constant troupe = IMadMouse(0x74d9d90a7fc261FBe92eD47B606b6E0E00d75E70);
-
-    IGouda immutable gouda;
-    IMadMouse immutable genesis;
-    IMadMouse immutable troupe;
-
-    constructor(
-        IGouda gouda_,
-        IMadMouse genesis_,
-        IMadMouse troupe_
-    ) {
-        gouda = gouda_;
-        genesis = genesis_;
-        troupe = troupe_;
-    }
+    IGouda constant gouda = IGouda(0x3aD30C5E3496BE07968579169a96f00D56De4C1A);
+    IMadMouse constant genesis = IMadMouse(0x3aD30c5e2985e960E89F4a28eFc91BA73e104b77);
+    IMadMouse constant troupe = IMadMouse(0x74d9d90a7fc261FBe92eD47B606b6E0E00d75E70);
 
     /* ------------- External ------------- */
 
@@ -195,14 +181,13 @@ contract Marketplace is Ownable {
         uint256 randomSeed = raffleRandomSeeds[hash];
         if (randomSeed == 0) return winners;
 
-        uint256 totalSupply = marketItems[hash].totalSupply;
+        uint256[] memory winnerIds = Choice.selectNOfM(numPrizes, marketItems[hash].totalSupply, randomSeed);
 
-        uint256[] memory winnerIds = Choice.selectNOfM(numPrizes, totalSupply, randomSeed);
         uint256 numIds = winnerIds.length;
 
         winners = new address[](numIds);
 
-        for (uint256 i; i < numIds; ++i) winners[i] = raffleEntries[hash][i + 1];
+        for (uint256 i; i < numIds; ++i) winners[i] = raffleEntries[hash][winnerIds[i] + 1];
     }
 
     /* ------------- Owner ------------- */
